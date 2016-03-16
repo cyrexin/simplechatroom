@@ -29,7 +29,8 @@ class Authenticator:
                 'blocked': [],
                 'login_attempts': 0,
                 'last_attempt': None,
-                'session': False  # used for checking if the user is online
+                'session': False,  # used for checking if the user is online
+                'locked': False
             }
 
         user_pass.close()
@@ -74,15 +75,16 @@ class Authenticator:
             user = Authenticator.users[username]
             # print user
 
-            # should reset login_attempts if the block_time has passed
+            # should reset locking status if the block_time has passed
             if user['last_attempt']:
                 since_last = (datetime.datetime.now() - user['last_attempt']).total_seconds()
                 if since_last > block_time:
-                    user['login_attempts'] = 0
+                    if user['locked']:
+                        user['locked'] = False
 
             user['last_attempt'] = datetime.datetime.now()
 
-            if user['login_attempts'] < 2:  # the user has 3 chances to input a wrong password
+            if user['login_attempts'] < 2 and not user['locked']:  # the user has 3 chances to input a wrong password
                 if user['password'] == password:
                     if Authenticator.is_online(user):  # if the user has been online, disconnect it from other machine.
                         try:
@@ -110,6 +112,8 @@ class Authenticator:
             else:
                 command = 'BLOCK'
                 response = {'message': 'This account has been locked for ' + str(block_time) + ' seconds due to too many attempts. Please try later.'}
+                user['locked'] = True
+                user['login_attempts'] = 0
 
         else:
             print 'User "%s" is not found.' % username

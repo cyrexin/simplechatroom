@@ -9,7 +9,7 @@ class Connection:
             s = socket(AF_INET, SOCK_STREAM)
             s.bind((host, port))
             s.listen(5)
-            print 'The host is: %s. The port is %s.' % (host, port)
+            # print 'The host is: %s. The port is %s.' % (host, port)
             return s
         except:
             print "Failed to bind on port: " + str(port)
@@ -31,21 +31,17 @@ class Connection:
     def send(s, command, data):
         """
         """
-        Connection.request(s, [command, data])
-
-    @staticmethod
-    def request(s, data):
-        """
-        """
+        all = [command, data]
         try:
-            data_json = json.dumps(data)
-            # 0print 'data_json: ' + data_json
+            data_json = json.dumps(all)
+            # print 'data_json: ' + data_json
             s.send("%d\n" % len(data_json))
             s.send(data_json)
         except:
             print "Failed to send data:"
-            print data
+            print all
             raise
+
 
     @staticmethod
     def receive(s):
@@ -68,11 +64,11 @@ class Connection:
             print "Failed to receive data."
             raise
 
-    @staticmethod
-    def clientHandler(conn, addr):
-        print addr, "is Connected"
-        while 1:
-            data = conn.recv(1024)
-            if not data:
-                break
-            print "Received Message", repr(data)
+    # @staticmethod
+    # def clientHandler(conn, addr):
+    #     print addr, "is Connected"
+    #     while 1:
+    #         data = conn.recv(1024)
+    #         if not data:
+    #             break
+    #         print "Received Message", repr(data)

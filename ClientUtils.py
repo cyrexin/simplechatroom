@@ -1,5 +1,6 @@
 from Connection import *
 from threading import Thread
+import os
 
 
 class ClientUtils:
@@ -18,12 +19,12 @@ class ClientUtils:
         """
         """
         if self.authorized:
-            Thread(target=self.listen).start()
+            Thread(target=self.listen_server).start()
             self.started = True
         else:
             raise Exception('The client is not authorized. Should run authenticate() first.')
 
-    def listen(self):
+    def listen_server(self):
         """
         Thread that listen on port self.port for messages from the server.
         When server connects, start thread self._listen_thread for communication.
@@ -41,7 +42,7 @@ class ClientUtils:
         (cmd, data) = Connection.receive(s)
 
         command = cmd['command']
-        print 'command: ' + command
+        # print 'command: ' + command
 
         if command == 'MESSAGE':
             cmd_from = data['from']
@@ -141,5 +142,18 @@ class ClientUtils:
             for username in message:
                 output += username + ' '
             print output
+
+        s.close()
+
+    def check(self, target):
+        if target == '':  # if the target if not specified, then check yourself
+            target = self.username
+        s = Connection.connect(self.server['host'], self.server['port'])
+        Connection.send(s, self.create_command("CHECK"), {'target': target})
+
+        (cmd, data) = Connection.receive(s)
+        message = data['message']
+        if cmd['command'] != 'OK':
+            print message
 
         s.close()

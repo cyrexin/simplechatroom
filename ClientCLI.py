@@ -1,5 +1,6 @@
 from ClientUtils import *
 from Utils import *
+import os
 
 
 class ClientCLI:
@@ -42,7 +43,7 @@ class ClientCLI:
         """
         while True:
             line = raw_input('Please enter your command: ')
-            print('line: ' + line)
+            # print('line: ' + line)
             if len(line) == 0:
                 continue
 
@@ -102,5 +103,11 @@ class ClientCLI:
                 else:
                     print 'Wrong parameters. Usage: last <number>, where 0 < number <= 60'
 
+            elif command == 'check':  # check user's status. mainly for debugging use
+                target = ''
+                if len(parameters) > 0:
+                    target = parameters
+                self.client.check(target)
+
             else:
-                print 'Invalid command'
+                print command + ' - is an invalid command.'
