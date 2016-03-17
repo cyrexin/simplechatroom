@@ -28,10 +28,10 @@ class Authenticator:
                 'ip': '',
                 'port': 0,
                 'last_seen': None,
-                'login_attempts': 0,
-                'last_attempt': None,
+                'login_attempts': {},
+                'last_attempt': {},
                 'session': False,  # used for checking if the user is online
-                'locked': False
+                'locked': {}
             }
 
             # load offline messages
@@ -81,7 +81,7 @@ class Authenticator:
         if user:
             ip = user.get('ip', None)
             port = user.get('port', None)
-            return (ip, port)
+            return ip, port
 
         return None
 
@@ -95,21 +95,22 @@ class Authenticator:
         # print 'password plain: ' + data['password']
         # print 'password = ' + password
         # print self.users[username]
+        user_ip = addr[0]
 
         if username in Authenticator.users:
             user = Authenticator.users[username]
             # print user
 
-            # should reset locking status if the block_time has passed
-            if user['last_attempt']:
-                since_last = (datetime.datetime.now() - user['last_attempt']).total_seconds()
+            # should reset locking status for the IP if the block_time has passed
+            if user_ip in user['last_attempt']:
+                since_last = (datetime.datetime.now() - user['last_attempt'][user_ip]).total_seconds()
                 if since_last > block_time:
-                    if user['locked']:
-                        user['locked'] = False
+                    if user_ip in user['locked']:
+                        user['locked'][user_ip] = False
 
-            user['last_attempt'] = datetime.datetime.now()
+            user['last_attempt'][user_ip] = datetime.datetime.now()
 
-            if user['login_attempts'] < 2 and not user['locked']:  # the user has 3 chances to input a wrong password
+            if user_ip not in user['locked'] or not user['locked'][user_ip]:
                 if user['password'] == password:
                     if Authenticator.is_online(user):  # if the user has been online, disconnect it from other machine.
                         try:
@@ -117,7 +118,7 @@ class Authenticator:
                             socket_old = Connection.connect(ip, port)
                             command = {'command': 'LOGOUT'}
                             print addr
-                            message = username + 'has connected from address: ' + addr[0] + '. You will be disconnected.'
+                            message = username + ' has connected from address: ' + addr[0] + '. You will be disconnected.'
                             Connection.send(socket_old, command, {'message': message})
                             socket_old.close()
                         except:
@@ -127,6 +128,9 @@ class Authenticator:
                     user['port'] = random.randint(10000, 50000)  # assign a random port to the client TODO:maybe there is a better way
                     user['last_seen'] = datetime.datetime.now()
                     user['session'] = True
+
+                    if user_ip in user['login_attempts']:
+                        user['login_attempts'][user_ip] = 0
 
                     offline_messages = []
                     if len(user['offline_messages']) > 0:  # should send these messages to the user and reset the offline_messages field
@@ -139,14 +143,23 @@ class Authenticator:
                     response = {'ip': user['ip'], 'port': user['port'], 'message': 'You have been connected to the chat server!', 'offline_messages': offline_messages}
                 else:  # wrong password
                     # print 'The input password is not correct.'
-                    user['login_attempts'] += 1
+                    if user_ip not in user['login_attempts']:
+                        user['login_attempts'][user_ip] = 1
+                    else:
+                        user['login_attempts'][user_ip] += 1
                     command = 'WRONG_PASSWORD'
-                    response = {'message': 'The input password is not correct.'}
+                    message = 'The input password is not correct.'
+                    # response = {'message': 'The input password is not correct.'}
+
+                    if user['login_attempts'][user_ip] == 3:  # the user has 3 chances to input a wrong password
+                        message += '\nThis account has been locked for ' + str(block_time) + ' seconds due to too many attempts. Please try later.'
+                        user['locked'][user_ip] = True  # set the account as locked for the attempted IP
+                        user['login_attempts'][user_ip] = 0  # reset the number of login attempt for the IP
+
+                    response = {'message': message}
             else:
                 command = 'BLOCK'
                 response = {'message': 'This account has been locked for ' + str(block_time) + ' seconds due to too many attempts. Please try later.'}
-                user['locked'] = True
-                user['login_attempts'] = 0
 
         else:
             print 'User "%s" is not found.' % username

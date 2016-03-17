@@ -222,7 +222,7 @@ class ServerUtils:
         if not is_forced:
             user['last_seen'] = datetime.datetime.now()
         user['session'] = False
-        user['login_attempts'] = 0
+        # user['login_attempts'] = 0
 
     def who(self, s, from_user):
         """
@@ -273,10 +273,10 @@ class ServerUtils:
         sender_username = from_user
         if target in self.users:
             user = self.users[target]
-            if Authenticator.is_online(user):
-                message = {'from': sender_username, 'message': str(user)}
-            else:
-                message = {'from': sender_username, 'message': 'User ' + target + ' is not online.'}
+            #if Authenticator.is_online(user):  # for better debugging, this line may not be necessary
+            message = {'from': sender_username, 'message': str(user)}
+            #else:
+            #    message = {'from': sender_username, 'message': 'User ' + target + ' is not online.'}
         else:
             message = {'from': sender_username, 'message': 'User ' + target + ' is not found.'}
         Connection.send(s, command, message)
