@@ -21,8 +21,8 @@ class ServerUtils:
         """
         Start the server and wait for connections.
         """
-        # ip = socket.gethostbyname(socket.gethostname())
-        ip = 'localhost'
+        ip = gethostbyname(gethostname())
+        # ip = 'localhost'
         try:
             s = Connection.bind(ip, self.port)
             print 'Server (' + ip + ':' + str(self.port) + ') has started....'

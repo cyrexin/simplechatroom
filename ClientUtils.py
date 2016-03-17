@@ -27,12 +27,15 @@ class ClientUtils:
     def listen_server(self):
         """
         """
-        # ip = socket.gethostbyname(socket.gethostname())
-        ip = ''
-        s = Connection.bind(ip, self.port)
-        while True:
-           conn, addr = s.accept()
-           Thread(target=self.listen_thread, args=(conn, addr)).start()
+        ip = gethostbyname(gethostname())
+        # ip = ''
+        try:
+            s = Connection.bind(ip, self.port)
+            while True:
+               conn, addr = s.accept()
+               Thread(target=self.listen_thread, args=(conn, addr)).start()
+        except:
+            os._exit(1)
 
     def listen_thread(self, s, addr):
         """
