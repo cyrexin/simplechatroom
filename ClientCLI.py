@@ -102,7 +102,7 @@ class ClientCLI:
 
             elif command == 'logout':
                 self.client.logout()
-                print 'Goodbye!'  #TODO: better message
+                print 'Thanks for using the chat room. See you next time!'
                 # sys.exit(0)
                 os._exit(0)
 

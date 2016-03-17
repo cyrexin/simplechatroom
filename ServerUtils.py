@@ -32,8 +32,19 @@ class ServerUtils:
                     conn, addr = s.accept()
                     Thread(target=self.listen_client, args=(conn, addr)).start()
                 except (KeyboardInterrupt, SystemExit):
+                    for username in self.users:  # log all users out
+                        user = self.users[username]
+                        if Authenticator.is_online(user):
+                            (ip, port) = Authenticator.user_address(user)
+                            command = {'command': 'LOGOUT'}
+                            message = {'from': 'SERVER', 'message': 'You have been disconnected by the server because the server is shutting down.'}
+                            socket_to = Connection.connect(ip, port)
+                            Connection.send(socket_to, command, message)
+                            socket_to.close()
+                            self.logout(username, True)
+
                     s.close()
-                    print '\nThank you for using this chat room. See you next time!'
+                    print '\nThank you for using this chat room. All connected users have been disconnected. See you next time!'
                     sys.exit(0)
         except:
             os._exit(1)
@@ -47,27 +58,27 @@ class ServerUtils:
         print 'data: %s' % data
 
         cmd = command['command']
-        cmd_from = command['from']
+        from_user = command['from']
 
         if cmd == 'AUTH':
-            self.authenticate(s, cmd_from, data, addr)
+            self.authenticate(s, from_user, data, addr)
         elif cmd == 'BROADCAST':
-            self.broadcast(s, cmd_from, data)
-            Authenticator.users[cmd_from]['last_seen'] = datetime.datetime.now()  # should update user's last_seen if the user has done something
+            self.broadcast(s, from_user, data)
+            Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()  # should update user's last_seen if the user has done something
         elif cmd == 'SEND':
-            self.send_message(s, cmd_from, data)
-            Authenticator.users[cmd_from]['last_seen'] = datetime.datetime.now()
+            self.send_message(s, from_user, data)
+            Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
         elif cmd == 'LOGOUT':
-            self.logout(cmd_from)
+            self.logout(from_user)
         elif cmd == 'WHO':
-            self.who(s, cmd_from)
-            Authenticator.users[cmd_from]['last_seen'] = datetime.datetime.now()
+            self.who(s, from_user)
+            Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
         elif cmd == 'LAST':
-            self.last(s, cmd_from, data)
-            Authenticator.users[cmd_from]['last_seen'] = datetime.datetime.now()
+            self.last(s, from_user, data)
+            Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
         elif cmd == 'CHECK':
-            self.check(s, cmd_from, data)
-            Authenticator.users[cmd_from]['last_seen'] = datetime.datetime.now()
+            self.check(s, from_user, data)
+            Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
 
         s.close()
 
@@ -96,14 +107,14 @@ class ServerUtils:
             time.sleep(self.CHECK_FREQUENCY)
 
 
-    def authenticate(self, s, cmd_from, data, addr):
-        (command, response) = Authenticator.authenticate(cmd_from, data, addr, self.block_time)
+    def authenticate(self, s, from_user, data, addr):
+        (command, response) = Authenticator.authenticate(from_user, data, addr, self.block_time)
         Connection.send(s, command, response)
 
-    def broadcast(self, s, cmd_from, data):
+    def broadcast(self, s, from_user, data):
         """
         """
-        sender_username = cmd_from
+        sender_username = from_user
         message = data['message']
 
         command = {'command': 'OK'}
@@ -128,14 +139,14 @@ class ServerUtils:
 
         Connection.send(s, command, {'message': response})
 
-    def send_message(self, s, cmd_from, data):
+    def send_message(self, s, from_user, data):
         """
         :param s:
-        :param cmd_from:
+        :param from_user:
         :param data:
         :return:
         """
-        sender_username = cmd_from
+        sender_username = from_user
         message = data['message']
         message_to = data['message_to']  # tuple of receiving users
 
@@ -213,13 +224,13 @@ class ServerUtils:
         user['session'] = False
         user['login_attempts'] = 0
 
-    def who(self, s, cmd_from):
+    def who(self, s, from_user):
         """
-        :param cmd_from:
+        :param from_user:
         :return:
         """
         online_users = []
-        sender_username = cmd_from
+        sender_username = from_user
         for username in self.users:
             if username != sender_username:
                 user = self.users[username]
@@ -230,10 +241,10 @@ class ServerUtils:
         message = {'from': sender_username, 'message': online_users}
         Connection.send(s, command, message)
 
-    def last(self, s, cmd_from, data):
+    def last(self, s, from_user, data):
         """
         :param s:
-        :param cmd_from:
+        :param from_user:
         :param data:
         :return:
         """
@@ -245,21 +256,21 @@ class ServerUtils:
                 if (datetime.datetime.now() - last_seen).total_seconds() <= data['number'] * 60:
                     users.append(username)
 
-        sender_username = cmd_from
+        sender_username = from_user
         command = {'command': 'ok'}
         message = {'from': sender_username, 'message': users}
         Connection.send(s, command, message)
 
-    def check(self, s, cmd_from, data):
+    def check(self, s, from_user, data):
         """
         :param s:
-        :param cmd_from:
+        :param from_user:
         :param data:
         :return:
         """
         target = data['target']
         command = {'command': 'ok'}
-        sender_username = cmd_from
+        sender_username = from_user
         if target in self.users:
             user = self.users[target]
             if Authenticator.is_online(user):

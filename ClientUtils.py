@@ -43,13 +43,13 @@ class ClientUtils:
         # print 'command: ' + command
 
         if command == 'MESSAGE':
-            cmd_from = data['from']
+            from_user = data['from']
             message = data['message']
-            print '\n' + cmd_from + ' said: ' + message
+            print '\n' + from_user + ' said: ' + message
         elif command == 'LOGOUT':
             message = data['message']
             s.close()
-            print message
+            print '\n' + message
             # sys.exit(0)
             os._exit(0)
 

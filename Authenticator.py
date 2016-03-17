@@ -86,10 +86,10 @@ class Authenticator:
         return None
 
     @staticmethod
-    def authenticate(cmd_from, data, addr, block_time):
+    def authenticate(from_user, data, addr, block_time):
         """
         """
-        username = cmd_from
+        username = from_user
         password = Encrypt.create_signature(data['password'])
         # print 'username = ' + username
         # print 'password plain: ' + data['password']
