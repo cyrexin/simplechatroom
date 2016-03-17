@@ -22,7 +22,7 @@ class Authenticator:
             password = split[1]
             Authenticator.users[username] = {
                 'password': password,
-                'queue': [],
+                'offline_messages': [],
                 'ip': '',
                 'port': 0,
                 'last_seen': None,
@@ -102,8 +102,14 @@ class Authenticator:
                     user['port'] = random.randint(10000, 50000)  # assign a random port to the client
                     user['last_seen'] = datetime.datetime.now()
                     user['session'] = True
+
+                    offline_messages = []
+                    if len(user['offline_messages']) > 0:  # should send these messages to the user and reset the offline_messages field
+                        offline_messages = user['offline_messages']
+                        user['offline_messages'] = []
+
                     command = 'OK'
-                    response = {'ip': user['ip'], 'port': user['port'], 'message': 'You have been connected to the chat server!'}
+                    response = {'ip': user['ip'], 'port': user['port'], 'message': 'You have been connected to the chat server!', 'offline_messages': offline_messages}
                 else:  # wrong password
                     # print 'The input password is not correct.'
                     user['login_attempts'] += 1

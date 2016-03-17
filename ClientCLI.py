@@ -72,15 +72,15 @@ class ClientCLI:
                         message = args[1]
                     else:
                         args = re.match( r'\((.+)\)\s(.+)', parameters, re.M|re.I)
-                        print 'args.group(1): ' + args.group(1)
-                        print 'args.group(2): ' + args.group(2)
+                        # print 'args.group(1): ' + args.group(1)
+                        # print 'args.group(2): ' + args.group(2)
                         user_list = args.group(1)
                         message = args.group(2)
                         user_list = user_list.split(' ')
                         for user in user_list:
                             message_to.append(user)
 
-                    print message_to
+                    # print message_to
 
                     self.client.send_message(message_to, message)
                 else:

@@ -103,7 +103,7 @@ class ServerUtils:
         message = data['message']
 
         command = {'command': 'OK'}
-        response = ''
+        response = 'You message has been broadcast!'
         sender = self.users[sender_username]
         for username in self.users:
             user = self.users[username]
@@ -122,6 +122,9 @@ class ServerUtils:
                 else:
                     command = {'command':'WARNING'}
                     response = 'Your message could not be delivered to some recipients'
+            else:  # store as an offline message
+                offline_message = {'sender': sender_username, 'message': message}
+                user['offline_messages'].append(offline_message)
 
         Connection.send(s, command, {'message': response})
 
@@ -137,7 +140,7 @@ class ServerUtils:
         message_to = data['message_to']  # tuple of receiving users
 
         command = {'command': 'OK'}
-        response = ''
+        response = 'You message has been sent!'
         sender = self.users[sender_username]
         for username in message_to:
             print username
@@ -159,6 +162,9 @@ class ServerUtils:
                     else:
                         command = {'command':'WARNING'}
                         response = 'Your message could not be delivered to some recipients'
+                else:  # store as an offline message
+                    offline_message = {'sender': sender_username, 'message': message}
+                    user['offline_messages'].append(offline_message)
 
         Connection.send(s, command, {'message': response})
 

@@ -47,7 +47,7 @@ class ClientUtils:
         if command == 'MESSAGE':
             cmd_from = data['from']
             message = data['message']
-            print cmd_from + ' said: ' + message
+            print '\n' + cmd_from + ' said: ' + message
         elif command == 'LOGOUT':
             message = data['message']
             s.close()
@@ -72,6 +72,12 @@ class ClientUtils:
             self.addr = data['ip']
             self.port = data['port']
             print data['message']
+
+            if len(data['offline_messages']) > 0:
+                print 'You have got some offline messages:'
+                for offline_message in data['offline_messages']:
+                    print offline_message['sender'] + ' said: ' + offline_message['message']
+
             return True
         else:
             print data['message']
@@ -91,8 +97,7 @@ class ClientUtils:
         Connection.send(s, self.create_command('BROADCAST'), data)
 
         (cmd, data) = Connection.receive(s)
-        if cmd['command'] != 'OK':
-            print data['message']
+        print cmd['command'] + ' - ' + data['message']
 
         s.close()
 
@@ -107,8 +112,7 @@ class ClientUtils:
         Connection.send(s, self.create_command('SEND'), data)
 
         (cmd, data) = Connection.receive(s)
-        if cmd['command'] != 'OK':
-            print data['message']
+        print cmd['command'] + ' - ' + data['message']
 
         s.close()
 
