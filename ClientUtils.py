@@ -26,8 +26,6 @@ class ClientUtils:
 
     def listen_server(self):
         """
-        Thread that listen on port self.port for messages from the server.
-        When server connects, start thread self._listen_thread for communication.
         """
         # ip = socket.gethostbyname(socket.gethostname())
         ip = ''
@@ -59,29 +57,33 @@ class ClientUtils:
         # print('addr: ' + addr)
 
     def authenticate(self, username, password):
-        s = Connection.connect(self.server['host'], self.server['port'])
-        command = {'command': 'AUTH', 'from': username}
-        data = {'password': password}
-        Connection.send(s, command, data)
+        try:
+            s = Connection.connect(self.server['host'], self.server['port'])
+            command = {'command': 'AUTH', 'from': username}
+            data = {'password': password}
+            Connection.send(s, command, data)
 
-        (cmd, data) = Connection.receive(s)
-        s.close()
-        if cmd['command'] == 'OK':
-            self.authorized = True
-            self.username = username
-            self.addr = data['ip']
-            self.port = data['port']
-            print data['message']
+            (cmd, data) = Connection.receive(s)
+            s.close()
+            if cmd['command'] == 'OK':
+                self.authorized = True
+                self.username = username
+                self.addr = data['ip']
+                self.port = data['port']
+                print data['message']
 
-            if len(data['offline_messages']) > 0:
-                print 'You have got some offline messages:'
-                for offline_message in data['offline_messages']:
-                    print offline_message['sender'] + ' said: ' + offline_message['message']
+                if len(data['offline_messages']) > 0:
+                    print 'You have got some offline messages:'
+                    for offline_message in data['offline_messages']:
+                        print offline_message['sender'] + ' said: ' + offline_message['message']
 
-            return True
-        else:
-            print data['message']
-            return False
+                return True
+            else:
+                print data['message']
+                return False
+        except:
+            # print "Failed to connect to the server " + self.server['host'] + " on port: " + str(self.server['port'])
+            os._exit(1)
 
     def create_command(self, command):
         """

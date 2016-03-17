@@ -11,8 +11,9 @@ class Connection:
             s.listen(5)
             # print 'The host is: %s. The port is %s.' % (host, port)
             return s
-        except:
-            print "Failed to bind on port: " + str(port)
+        except error, msg:
+            # print "Failed to bind on port: " + str(port)
+            print msg[1]
             raise
 
     @staticmethod

@@ -3,6 +3,7 @@ from Authenticator import *
 from Connection import *
 import datetime
 import time
+import os
 
 
 class ServerUtils:
@@ -22,17 +23,20 @@ class ServerUtils:
         """
         # ip = socket.gethostbyname(socket.gethostname())
         ip = 'localhost'
-        s = Connection.bind(ip, self.port)
-        print 'Server (' + ip + ':' + str(self.port) + ') has started....'
-        Thread(target=self.check_client, args=()).start()
-        while True:
-            try:
-                conn, addr = s.accept()
-                Thread(target=self.listen_client, args=(conn, addr)).start()
-            except (KeyboardInterrupt, SystemExit):
-                s.close()
-                print 'Thank you for using this chat room. See you next time!'
-                return
+        try:
+            s = Connection.bind(ip, self.port)
+            print 'Server (' + ip + ':' + str(self.port) + ') has started....'
+            Thread(target=self.check_client, args=()).start()
+            while True:
+                try:
+                    conn, addr = s.accept()
+                    Thread(target=self.listen_client, args=(conn, addr)).start()
+                except (KeyboardInterrupt, SystemExit):
+                    s.close()
+                    print 'Thank you for using this chat room. See you next time!'
+                    return
+        except:
+            os._exit(1)
 
     def listen_client(self, s, addr):
         """
@@ -108,20 +112,16 @@ class ServerUtils:
         for username in self.users:
             user = self.users[username]
             if Authenticator.is_online(user):
-                if username not in sender['blocked']:
-                    if username != sender_username:
-                        (ip, port) = Authenticator.user_address(user)
-                        try:
-                            socket_to = Connection.connect(ip, port)
-                            resp_cmd = {'command': 'MESSAGE'}
-                            json_message = {'from': sender_username, 'message': message}
-                            Connection.send(socket_to, resp_cmd, json_message)
-                            socket_to.close()
-                        except:
-                            print 'Could not deliver to: ' + ip + ' port: ' + str(port)
-                else:
-                    command = {'command':'WARNING'}
-                    response = 'Your message could not be delivered to some recipients'
+                if username != sender_username:
+                    (ip, port) = Authenticator.user_address(user)
+                    try:
+                        socket_to = Connection.connect(ip, port)
+                        resp_cmd = {'command': 'MESSAGE'}
+                        json_message = {'from': sender_username, 'message': message}
+                        Connection.send(socket_to, resp_cmd, json_message)
+                        socket_to.close()
+                    except:
+                        print 'Could not deliver to: ' + ip + ' port: ' + str(port)
             # else:  # store as an offline message
             #     offline_message = {'sender': sender_username, 'message': message}
             #     user['offline_messages'].append(offline_message)
@@ -148,7 +148,6 @@ class ServerUtils:
             if username in self.users:  # only send message to those valid users
                 user = self.users[username]
                 if Authenticator.is_online(user):
-                    # if username not in sender['blocked']:
                     if username != sender_username:  # should not self message to yourself
                         (ip, port) = Authenticator.user_address(user)
                         try:
@@ -170,9 +169,6 @@ class ServerUtils:
                         # status = 'WARNING'
                         response += 'To ' + username + ': ' + 'You cannot send message to yourself.\n'
                         # Connection.send(s, {'command': status}, {'message': response})
-                    # else:
-                    #    command = {'command':'WARNING'}
-                    #    response = 'Your message could not be delivered to some recipients'
                 else:  # store as an offline message
                     self.__store_offline_message(user, username, sender_username, message)
                     # status = 'OK'

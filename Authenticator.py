@@ -28,7 +28,6 @@ class Authenticator:
                 'ip': '',
                 'port': 0,
                 'last_seen': None,
-                'blocked': [],
                 'login_attempts': 0,
                 'last_attempt': None,
                 'session': False,  # used for checking if the user is online
