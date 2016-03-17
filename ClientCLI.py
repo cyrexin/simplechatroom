@@ -16,16 +16,16 @@ class ClientCLI:
         """
         """
 
-        # try:
-        self.authenticate()
-        self.client.start()
-        self.cli()
-        # except (KeyboardInterrupt, SystemExit):
-        #     if self.client.started:
-        #         self.client.logout()
-        #
-        #     print 'Goodbye!'
-        #     exit(0)
+        try:
+            self.authenticate()
+            self.client.start()
+            self.cli()
+        except (KeyboardInterrupt, SystemExit):
+            if self.client.started:
+                self.client.logout()
+
+            print '\nThanks for using the chat room. See you next time!'
+            os._exit(0)
 
     def authenticate(self):
         """

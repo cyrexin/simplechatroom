@@ -33,8 +33,8 @@ class ServerUtils:
                     Thread(target=self.listen_client, args=(conn, addr)).start()
                 except (KeyboardInterrupt, SystemExit):
                     s.close()
-                    print 'Thank you for using this chat room. See you next time!'
-                    return
+                    print '\nThank you for using this chat room. See you next time!'
+                    sys.exit(0)
         except:
             os._exit(1)
 
@@ -262,10 +262,10 @@ class ServerUtils:
         sender_username = cmd_from
         if target in self.users:
             user = self.users[target]
-            #if Authenticator.is_online(user):
-            message = {'from': sender_username, 'message': str(user)}
-            #else:
-            #    message = {'from': sender_username, 'message': 'User ' + target + ' is not online.'}
+            if Authenticator.is_online(user):
+                message = {'from': sender_username, 'message': str(user)}
+            else:
+                message = {'from': sender_username, 'message': 'User ' + target + ' is not online.'}
         else:
             message = {'from': sender_username, 'message': 'User ' + target + ' is not found.'}
         Connection.send(s, command, message)
