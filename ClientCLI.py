@@ -1,6 +1,7 @@
 from ClientUtils import *
 from Utils import *
 import os
+import sys
 
 
 class ClientCLI:
@@ -42,7 +43,8 @@ class ClientCLI:
         """
         """
         while True:
-            line = raw_input('Please enter your command: ')
+            encoding = 'utf-8' if sys.stdin.encoding in (None, 'ascii') else sys.stdin.encoding
+            line = raw_input('Please enter your command: ').decode(encoding)
             # print('line: ' + line)
             if len(line) == 0:
                 continue
@@ -73,6 +75,8 @@ class ClientCLI:
                         message_to.append(args[0])
                         message = args[1]
 
+                        # message = message.decode('utf-8').encode('utf-8')
+
                         self.client.send_message(message_to, message)
                     elif regex_multi_users:
                         args = re.match( r'\((.+)\)\s(.+)', parameters, re.M|re.I)
@@ -83,6 +87,8 @@ class ClientCLI:
                         user_list = user_list.split(' ')
                         for user in user_list:
                             message_to.append(user)
+
+                        # message = message.deconde('utf-8').encode('utf-8')
 
                         self.client.send_message(message_to, message)
                     else:
