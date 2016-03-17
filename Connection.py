@@ -32,15 +32,15 @@ class Connection:
     def send(s, command, data):
         """
         """
-        all = [command, data]
+        combined_json = [command, data]
         try:
-            data_json = json.dumps(all)
+            data_json = json.dumps(combined_json)
             # print 'data_json: ' + data_json
             s.send("%d\n" % len(data_json))
             s.send(data_json)
         except:
             print "Failed to send data:"
-            print all
+            print combined_json
             raise
 
 

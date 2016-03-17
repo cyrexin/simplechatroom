@@ -124,7 +124,7 @@ class Authenticator:
                             print 'Can not connect to old socket.'
 
                     user['ip'] = addr[0]
-                    user['port'] = random.randint(10000, 50000)  # assign a random port to the client
+                    user['port'] = random.randint(10000, 50000)  # assign a random port to the client TODO:maybe there is a better way
                     user['last_seen'] = datetime.datetime.now()
                     user['session'] = True
 

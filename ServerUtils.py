@@ -45,7 +45,7 @@ class ServerUtils:
 
                     s.close()
                     print '\nThank you for using this chat room. All connected users have been disconnected. See you next time!'
-                    sys.exit(0)
+                    os._exit(0)
         except:
             os._exit(1)
 
@@ -57,26 +57,26 @@ class ServerUtils:
         print 'command: %s' % command
         print 'data: %s' % data
 
-        cmd = command['command']
+        instruction = command['command']
         from_user = command['from']
 
-        if cmd == 'AUTH':
+        if instruction == 'AUTH':
             self.authenticate(s, from_user, data, addr)
-        elif cmd == 'BROADCAST':
+        elif instruction == 'BROADCAST':
             self.broadcast(s, from_user, data)
             Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()  # should update user's last_seen if the user has done something
-        elif cmd == 'SEND':
+        elif instruction == 'SEND':
             self.send_message(s, from_user, data)
             Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
-        elif cmd == 'LOGOUT':
+        elif instruction == 'LOGOUT':
             self.logout(from_user)
-        elif cmd == 'WHO':
+        elif instruction == 'WHO':
             self.who(s, from_user)
             Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
-        elif cmd == 'LAST':
+        elif instruction == 'LAST':
             self.last(s, from_user, data)
             Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
-        elif cmd == 'CHECK':
+        elif instruction == 'CHECK':
             self.check(s, from_user, data)
             Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
 
@@ -154,8 +154,8 @@ class ServerUtils:
         response = ''  #'You message has been sent!'
         sender = self.users[sender_username]
         for username in message_to:
-            print username
-            print username in self.users
+            # print username
+            # print username in self.users
             if username in self.users:  # only send message to those valid users
                 user = self.users[username]
                 if Authenticator.is_online(user):
