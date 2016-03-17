@@ -112,7 +112,7 @@ class ClientUtils:
         Connection.send(s, self.create_command('SEND'), data)
 
         (cmd, data) = Connection.receive(s)
-        print cmd['command'] + ' - ' + data['message']
+        print data['message']
 
         s.close()
 

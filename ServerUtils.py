@@ -122,9 +122,9 @@ class ServerUtils:
                 else:
                     command = {'command':'WARNING'}
                     response = 'Your message could not be delivered to some recipients'
-            else:  # store as an offline message
-                offline_message = {'sender': sender_username, 'message': message}
-                user['offline_messages'].append(offline_message)
+            # else:  # store as an offline message
+            #     offline_message = {'sender': sender_username, 'message': message}
+            #     user['offline_messages'].append(offline_message)
 
         Connection.send(s, command, {'message': response})
 
@@ -139,8 +139,8 @@ class ServerUtils:
         message = data['message']
         message_to = data['message_to']  # tuple of receiving users
 
-        command = {'command': 'OK'}
-        response = 'You message has been sent!'
+        status = 'OK'  #{'command': 'OK'}
+        response = ''  #'You message has been sent!'
         sender = self.users[sender_username]
         for username in message_to:
             print username
@@ -148,25 +148,51 @@ class ServerUtils:
             if username in self.users:  # only send message to those valid users
                 user = self.users[username]
                 if Authenticator.is_online(user):
-                    if username not in sender['blocked']:
-                        if username != sender_username:
-                            (ip, port) = Authenticator.user_address(user)
-                            try:
-                                socket_to = Connection.connect(ip, port)
-                                resp_cmd = {'command': 'MESSAGE'}
-                                json_message = {'from': sender_username, 'message': message}
-                                Connection.send(socket_to, resp_cmd, json_message)
-                                socket_to.close()
-                            except:
-                                print 'Could not deliver to: ' + ip + ' port: ' + str(port)
-                    else:
-                        command = {'command':'WARNING'}
-                        response = 'Your message could not be delivered to some recipients'
-                else:  # store as an offline message
-                    offline_message = {'sender': sender_username, 'message': message}
-                    user['offline_messages'].append(offline_message)
+                    # if username not in sender['blocked']:
+                    if username != sender_username:  # should not self message to yourself
+                        (ip, port) = Authenticator.user_address(user)
+                        try:
+                            socket_to = Connection.connect(ip, port)
+                            resp_cmd = {'command': 'MESSAGE'}
+                            json_message = {'from': sender_username, 'message': message}
+                            Connection.send(socket_to, resp_cmd, json_message)
+                            socket_to.close()
 
-        Connection.send(s, command, {'message': response})
+                            # status = 'OK'
+                            response += 'To ' + username + ': ' + 'You message has been sent!\n'
+                        except:
+                            print 'Could not deliver to: ' + ip + ' port: ' + str(port)
+                            # status = 'ERROR'
+                            response += 'To ' + username + ': ' + 'You message has failed to be sent!\n'
+
+                        # Connection.send(s, {'command': status}, {'message': response})
+                    else:
+                        # status = 'WARNING'
+                        response += 'To ' + username + ': ' + 'You cannot send message to yourself.\n'
+                        # Connection.send(s, {'command': status}, {'message': response})
+                    # else:
+                    #    command = {'command':'WARNING'}
+                    #    response = 'Your message could not be delivered to some recipients'
+                else:  # store as an offline message
+                    self.__store_offline_message(user, username, sender_username, message)
+                    # status = 'OK'
+                    response += 'To ' + username + ': ' + username + ' is not online. You message has been stored as an offline message.\n'
+                    # Connection.send(s, {'command': status}, {'message': response})
+            else:
+                # status = 'ERROR'
+                response += 'To ' + username + ': ' + 'User ' + username + ' is not found.\n'
+                # Connection.send(s, {'command': status}, {'message': response})
+
+        Connection.send(s, {'command': status}, {'message': response})
+
+    def __store_offline_message(self, user, username, sender_username, message):
+        offline_message = {'sender': sender_username, 'message': message}
+        user['offline_messages'].append(offline_message)
+
+        filename = 'offline_message_' + username + '.txt'
+        with open(filename, 'a') as myfile:
+            json.dump(offline_message, myfile)
+            myfile.write('\n')
 
     def logout(self, username, is_forced=False):
         """
@@ -240,10 +266,10 @@ class ServerUtils:
         sender_username = cmd_from
         if target in self.users:
             user = self.users[target]
-            if Authenticator.is_online(user):
-                message = {'from': sender_username, 'message': str(user)}
-            else:
-                message = {'from': sender_username, 'message': 'User ' + target + ' is not online.'}
+            #if Authenticator.is_online(user):
+            message = {'from': sender_username, 'message': str(user)}
+            #else:
+            #    message = {'from': sender_username, 'message': 'User ' + target + ' is not online.'}
         else:
             message = {'from': sender_username, 'message': 'User ' + target + ' is not found.'}
         Connection.send(s, command, message)

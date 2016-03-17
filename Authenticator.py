@@ -2,6 +2,8 @@ from Connection import *
 from Encrypt import *
 import datetime
 import random
+import json
+import os
 
 
 class Authenticator:
@@ -33,7 +35,31 @@ class Authenticator:
                 'locked': False
             }
 
+            # load offline messages
+            try:
+                Authenticator.__load_offline_messages(username)
+            except:
+                print 'Failed to load the offline messages for user ' + username + '.'
+
         user_pass.close()
+
+    @staticmethod
+    def __load_offline_messages(username):
+        message_filename = 'offline_message_' + username + '.txt'
+        try:
+            message_file = open(message_filename, 'r')
+            print 'Loading offline messages for user ' + username + '...'
+            for line in message_file:
+                Authenticator.users[username]['offline_messages'].append(
+                    json.loads(line)
+                )
+            message_file.close()
+            print 'Done loading offline messages for user ' + username + '.'
+
+            # os.remove(message_filename)  # delete the file after it is loaded
+        except IOError:
+            print 'User ' + username + ' does not have offline messages.'
+            pass
 
     @staticmethod
     def is_online(user):
@@ -107,6 +133,8 @@ class Authenticator:
                     if len(user['offline_messages']) > 0:  # should send these messages to the user and reset the offline_messages field
                         offline_messages = user['offline_messages']
                         user['offline_messages'] = []
+                        message_filename = 'offline_message_' + username + '.txt'
+                        os.remove(message_filename)  # delete the file after it is loaded
 
                     command = 'OK'
                     response = {'ip': user['ip'], 'port': user['port'], 'message': 'You have been connected to the chat server!', 'offline_messages': offline_messages}

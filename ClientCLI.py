@@ -66,11 +66,15 @@ class ClientCLI:
                 if len(parameters) > 0:
                     message_to = []
                     message = ''
-                    if '(' not in parameters:  # that there is only one user
+                    regex_one_user = re.match( r'^([\d\w]+)\s(.+)$', parameters, re.M|re.I)
+                    regex_multi_users = re.match( r'^\((.+)\)\s(.+)$', parameters, re.M|re.I)
+                    if regex_one_user:  # that there is only one user
                         args = parameters.split(' ', 1)
                         message_to.append(args[0])
                         message = args[1]
-                    else:
+
+                        self.client.send_message(message_to, message)
+                    elif regex_multi_users:
                         args = re.match( r'\((.+)\)\s(.+)', parameters, re.M|re.I)
                         # print 'args.group(1): ' + args.group(1)
                         # print 'args.group(2): ' + args.group(2)
@@ -80,9 +84,13 @@ class ClientCLI:
                         for user in user_list:
                             message_to.append(user)
 
+                        self.client.send_message(message_to, message)
+                    else:
+                        print 'Wrong parameters. Usage: send <user> <message> or send (<user>...<user>) <message>'
+
                     # print message_to
 
-                    self.client.send_message(message_to, message)
+                    # self.client.send_message(message_to, message)
                 else:
                     print 'Wrong parameters. Usage: send <user> <message> or send (<user>...<user>) <message>'
 
