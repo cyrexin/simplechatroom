@@ -58,27 +58,27 @@ class ClientCLI:
 
             data = line.split(" ", 1)
             command = ''
-            parameters = ''
+            params = ''
             if len(data) > 0:
                 command = data[0]
                 if len(data) > 1:
-                    parameters = data[1]
+                    params = data[1]
 
             if command == 'broadcast':
-                if len(parameters) > 0:
-                    message = parameters
+                if len(params) > 0:
+                    message = params
                     self.client.broadcast(message)
                 else:
-                    print 'Wrong parameters. Usage: broadcast <message>'
+                    print 'The parameters are invalid. Usage: broadcast <message>'
 
             elif command == 'send':  # TODO: support utf-8 message
-                if len(parameters) > 0:
+                if len(params) > 0:
                     message_to = []
                     message = ''
-                    regex_one_user = re.match( r'^([\d\w]+)\s(.+)$', parameters, re.M|re.I)
-                    regex_multi_users = re.match( r'^\((.+)\)\s(.+)$', parameters, re.M|re.I)
+                    regex_one_user = re.match( r'^([\d\w]+)\s(.+)$', params, re.M|re.I)
+                    regex_multi_users = re.match( r'^\((.+)\)\s(.+)$', params, re.M|re.I)
                     if regex_one_user:  # that there is only one user
-                        args = parameters.split(' ', 1)
+                        args = params.split(' ', 1)
                         message_to.append(args[0])
                         message = args[1]
 
@@ -86,7 +86,7 @@ class ClientCLI:
 
                         self.client.send_message(message_to, message)
                     elif regex_multi_users:
-                        args = re.match( r'\((.+)\)\s(.+)', parameters, re.M|re.I)
+                        args = re.match( r'\((.+)\)\s(.+)', params, re.M|re.I)
                         # print 'args.group(1): ' + args.group(1)
                         # print 'args.group(2): ' + args.group(2)
                         user_list = args.group(1)
@@ -99,13 +99,13 @@ class ClientCLI:
 
                         self.client.send_message(message_to, message)
                     else:
-                        print 'Wrong parameters. Usage: send <user> <message> or send (<user>...<user>) <message>'
+                        print 'The parameters are invalid. Usage: send <user> <message> or send (<user>...<user>) <message>'
 
                     # print message_to
 
                     # self.client.send_message(message_to, message)
                 else:
-                    print 'Wrong parameters. Usage: send <user> <message> or send (<user>...<user>) <message>'
+                    print 'The parameters are invalid. Usage: send <user> <message> or send (<user>...<user>) <message>'
 
             elif command == 'logout':
                 self.client.logout()
@@ -117,18 +117,39 @@ class ClientCLI:
                 self.client.who()
 
             elif command == 'last':
-                # print self.__is_number(parameters)
-                if len(parameters) > 0 and Utils.is_number(parameters) and int(parameters) > 0 and int(parameters) <= 60:
-                    number = int(parameters)
+                # print self.__is_number(params)
+                if len(params) > 0 and Utils.is_number(params) and int(params) > 0 and int(params) <= 60:
+                    number = int(params)
                     self.client.last(number)
                 else:
-                    print 'Wrong parameters. Usage: last <number>, where 0 < number <= 60'
+                    print 'The parameters are invalid. Usage: last <number>, where 0 < number <= 60'
 
             elif command == 'check':  # check user's status. mainly for debugging use
                 target = ''
-                if len(parameters) > 0:
-                    target = parameters
+                if len(params) > 0:
+                    target = params
                 self.client.check(target)
+
+            # when a user B is blacklisted by user A, user B cannot send messages to user A. QUESTION: should B be able to broadcast messages to A?
+            # the answer for the "QUESTION" now is yes.
+            elif command == 'blacklist' or command == 'whitelist':
+                if len(params) > 0:
+                    targets = []
+                    regex_one_user = re.match( r'^([\d\w]+)$', params, re.M|re.I)
+                    regex_multi_users = re.match( r'^\((.+)\)$', params, re.M|re.I)
+                    if regex_one_user:
+                        targets.append(params)
+
+                        self.client.update_blacklist(targets, command)
+                    elif regex_multi_users:
+                        user_list = regex_multi_users.group(1)
+                        user_list = user_list.split(' ')
+                        for user in user_list:
+                            targets.append(user)
+
+                        self.client.update_blacklist(targets, command)
+                    else:
+                        print 'The parameters are invalid. Usage: %s <user> or %s (<user>...<user>)' % (command, command)
 
             else:
                 print command + ' - is an invalid command.'

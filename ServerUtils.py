@@ -62,8 +62,8 @@ class ServerUtils:
         print 'command: %s' % command
         print 'data: %s' % data
 
-        instruction = command['command']
         from_user = command['from']
+        instruction = command['instruction']
 
         if instruction == 'LOGIN':
             self.authenticate(s, from_user, data, addr)
@@ -83,6 +83,12 @@ class ServerUtils:
             Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
         elif instruction == 'CHECK':
             self.check(s, from_user, data)
+            Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
+        elif instruction == 'BLACKLIST':
+            self.blacklist(s, from_user, data)
+            Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
+        elif instruction == 'WHITELIST':
+            self.whitelist(s, from_user, data)
             Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
 
         s.close()
@@ -161,43 +167,36 @@ class ServerUtils:
 
         status = 'OK'  #{'command': 'OK'}
         response = ''  #'You message has been sent!'
-        sender = self.users[sender_username]
+        sender_user = self.users[sender_username]
         for username in message_to:
             # print username
             # print username in self.users
             if username in self.users:  # only send message to those valid users
                 user = self.users[username]
-                if Authenticator.is_online(user):
-                    if username != sender_username:  # should not self message to yourself
-                        (ip, port) = Authenticator.get_user_address(user)
-                        try:
-                            socket_to = Connection.connect(ip, port)
-                            resp_cmd = {'command': 'MESSAGE'}
-                            json_message = {'from': sender_username, 'message': message}
-                            Connection.send(socket_to, resp_cmd, json_message)
-                            socket_to.close()
+                if sender_username not in user['black_list']:
+                    if Authenticator.is_online(user):
+                        if username != sender_username:  # should not self message to yourself
+                            (ip, port) = Authenticator.get_user_address(user)
+                            try:
+                                socket_to = Connection.connect(ip, port)
+                                resp_cmd = {'command': 'MESSAGE'}
+                                json_message = {'from': sender_username, 'message': message}
+                                Connection.send(socket_to, resp_cmd, json_message)
+                                socket_to.close()
 
-                            # status = 'OK'
-                            response += 'To ' + username + ': ' + 'You message has been sent!\n'
-                        except:
-                            print 'Could not deliver to: ' + ip + ' port: ' + str(port)
-                            # status = 'ERROR'
-                            response += 'To ' + username + ': ' + 'You message has failed to be sent!\n'
-
-                        # Connection.send(s, {'command': status}, {'message': response})
-                    else:
-                        # status = 'WARNING'
-                        response += 'To ' + username + ': ' + 'You cannot send message to yourself.\n'
-                        # Connection.send(s, {'command': status}, {'message': response})
-                else:  # store as an offline message
-                    self.__store_offline_message(user, username, sender_username, message)
-                    # status = 'OK'
-                    response += 'To ' + username + ': ' + username + ' is not online. You message has been stored as an offline message.\n'
-                    # Connection.send(s, {'command': status}, {'message': response})
+                                response += 'To ' + username + ': ' + 'You message has been sent!\n'
+                            except:
+                                print 'Could not deliver to: ' + ip + ' port: ' + str(port)
+                                response += 'To ' + username + ': ' + 'You message has failed to be sent!\n'
+                        else:
+                            response += 'To ' + username + ': ' + 'You cannot send message to yourself.\n'
+                    else:  # store as an offline message
+                        self.__store_offline_message(user, username, sender_username, message)
+                        response += 'To ' + username + ': ' + username + ' is not online. You message has been stored as an offline message.\n'
+                else:  # the sender is in the receiver's blacklist so the message cannot be sent
+                    response += 'To ' + username + ': Sorry! You are in user ' + username + '\'s blacklist. You message cannot be sent.\n'
             else:
-                # status = 'ERROR'
                 response += 'To ' + username + ': ' + 'User ' + username + ' is not found.\n'
-                # Connection.send(s, {'command': status}, {'message': response})
 
         Connection.send(s, {'command': status}, {'message': response})
 
@@ -281,4 +280,52 @@ class ServerUtils:
             #    message = {'from': sender_username, 'message': 'User ' + target + ' is not online.'}
         else:
             message = {'from': sender_username, 'message': 'User ' + target + ' is not found.'}
+        Connection.send(s, command, message)
+
+    def blacklist(self, s, from_user, data):
+        """
+        This methods is used to add users in the blacklist.
+        """
+        targets = data['targets']
+        command = {'command': 'ok'}
+        message = ''
+        sender_user = self.users[from_user]
+        for target in targets:
+            if target != from_user:  # you cannot blacklist yourself
+                if target in self.users:
+                    if target not in sender_user['black_list']:
+                        sender_user['black_list'].append(target)
+                        message += 'User ' + target + ' has been added in your blacklist.\n'
+                    else:
+                        message += 'User ' + target + ' is already in your blacklist.\n'
+                else:
+                    message += 'User ' + target + ' is not found.\n'
+            else:
+                message += 'For user ' + target + ': You cannot blacklist yourself.\n'
+
+        message = {'message': message}
+        Connection.send(s, command, message)
+
+    def whitelist(self, s, from_user, data):
+        """
+        This methods is used to remove users from the blacklist.
+        """
+        targets = data['targets']
+        command = {'command': 'ok'}
+        message = ''
+        sender_user = self.users[from_user]
+        for target in targets:
+            if target != from_user:  # you cannot whitelist yourself
+                if target in self.users:
+                    if target in sender_user['black_list']:
+                        sender_user['black_list'].remove(target)
+                        message += 'User ' + target + ' has been removed from your blacklist.\n'
+                    else:
+                        message += 'User ' + target + ' is not in your blacklist.\n'
+                else:
+                    message += 'User ' + target + ' is not found.\n'
+            else:
+                message += 'For user ' + target + ': You have no reason to remove yourself from the blacklist :)\n'
+
+        message = {'message': message}
         Connection.send(s, command, message)

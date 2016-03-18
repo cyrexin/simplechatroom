@@ -31,7 +31,8 @@ class Authenticator:
                 'login_attempts': {},
                 'last_attempt': {},
                 'session': False,  # used for checking if the user is online
-                'locked': {}
+                'locked': {},
+                'black_list': []
             }
 
             # load offline messages
