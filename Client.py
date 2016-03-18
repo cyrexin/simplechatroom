@@ -14,7 +14,7 @@ def main():
         else:
             print 'Port must be an integer.'
     else:
-        print "Invalid argument. Usage: python client.py <server> <port>"
+        print "The command is invalid. Usage: python client.py <server> <port>"
 
 
 if __name__ == "__main__":

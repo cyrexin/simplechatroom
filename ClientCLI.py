@@ -14,36 +14,43 @@ class ClientCLI:
 
     def start(self):
         """
+        1. Trigger the login command line interface.
+        2. If the user has been authorized, then start the client (which will bind a port and listen to the server).
+        3. Start the client CLI.
         """
 
         try:
-            self.authenticate()
+            self.__login()
             self.client.start()
-            self.cli()
-        except (KeyboardInterrupt, SystemExit):
-            if self.client.started:
+            self.__interface()
+        except KeyboardInterrupt, msg:
+            if self.client.authorized:
                 self.client.logout()
 
             print '\nThanks for using the chat room. See you next time!'
             os._exit(0)
 
-    def authenticate(self):
+    def __login(self):
         """
+        This is the CLI for the client to log in.
         """
         while True:
-            username = raw_input("username: ")
+            username = raw_input("Username: ")
             password = raw_input("Password: ")
             if username == '' or password == '':
+                print 'Username and password cannot be empty!'
                 continue
 
-            if self.client.authenticate(username, password):
+            if self.client.login(username, password):
                 return True
 
-    def cli(self):
+    def __interface(self):
         """
+        1. The user can input command here.
+        2. This CLI will also display the messages from the server.
         """
         while True:
-            encoding = 'utf-8' if sys.stdin.encoding in (None, 'ascii') else sys.stdin.encoding
+            encoding = 'utf-8' if sys.stdin.encoding in (None, 'ascii') else sys.stdin.encoding  # This is necessary to support UTF-8 characters.
             line = raw_input('Please enter your command: ').decode(encoding)
             # print('line: ' + line)
             if len(line) == 0:

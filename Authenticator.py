@@ -8,7 +8,7 @@ import os
 
 class Authenticator:
     """
-    This class is used for the server authentication
+    This class contains methods for the server authentication.
     """
     users = {}
 
@@ -63,20 +63,14 @@ class Authenticator:
     @staticmethod
     def is_online(user):
         """
+        Check if a user is online based on the session attribute.
         """
-        # last_seen = user.get('last_seen', None)
-        #
-        # if last_seen != None:
-        #     idle = (datetime.datetime.now() - last_seen).total_seconds()
-        #     if idle < TIMEOUT:
-        #         return True
-        #
-        # return False
         return user['session']
 
     @staticmethod
-    def user_address(user):
+    def get_user_address(user):
         """
+        Return the IP and port of a client user.
         """
         if user:
             ip = user.get('ip', None)
@@ -88,6 +82,9 @@ class Authenticator:
     @staticmethod
     def authenticate(from_user, data, addr, block_time):
         """
+        There are some key points in this server-side authentication method:
+        1. For a username, each IP has 3 chances to attempt login. After that, this IP will be blocked for this user for a period of BLOCK_TIME.
+        2. For a user, if it is logged in from another client, the previous logged-in client will be disconnected.
         """
         username = from_user
         password = Encrypt.create_signature(data['password'])
@@ -114,7 +111,7 @@ class Authenticator:
                 if user['password'] == password:
                     if Authenticator.is_online(user):  # if the user has been online, disconnect it from other machine.
                         try:
-                            (ip, port) = Authenticator.user_address(user)
+                            (ip, port) = Authenticator.get_user_address(user)
                             socket_old = Connection.connect(ip, port)
                             command = {'command': 'LOGOUT'}
                             print addr
@@ -162,9 +159,9 @@ class Authenticator:
                 response = {'message': 'This account has been locked for ' + str(block_time) + ' seconds due to too many attempts. Please try later.'}
 
         else:
-            print 'User "%s" is not found.' % username
+            message = 'User "%s" is not found.' % username
             command = 'USER_NOT_FOUND'
-            response = {'message': 'User not found.'}
+            response = {'message': message}
 
         command = {'command': command}
         return command, response

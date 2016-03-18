@@ -13,18 +13,16 @@ class ClientUtils:
         self.username = ''
         self.port = 0
         self.authorized = False
-        self.started = False
 
     def start(self):
         """
         """
         if self.authorized:
-            Thread(target=self.listen_server).start()
-            self.started = True
+            Thread(target=self.__server_listener).start()
         else:
             raise Exception('The client is not authorized. Should run authenticate() first.')
 
-    def listen_server(self):
+    def __server_listener(self):
         """
         """
         ip = gethostbyname(gethostname())
@@ -32,24 +30,25 @@ class ClientUtils:
         try:
             s = Connection.bind(ip, self.port)
             while True:
-               conn, addr = s.accept()
-               Thread(target=self.listen_thread, args=(conn, addr)).start()
+                conn, addr = s.accept()
+                Thread(target=self.__listener_thread, args=(conn, addr)).start()
         except:
             os._exit(1)
 
-    def listen_thread(self, s, addr):
+    def __listener_thread(self, s, addr):
         """
+        This is the thread that client listens to the message from the server.
         """
-        (cmd, data) = Connection.receive(s)
+        (command, data) = Connection.receive(s)
 
-        command = cmd['command']
+        instruction = command['command']
         # print 'command: ' + command
 
-        if command == 'MESSAGE':
+        if instruction == 'MESSAGE':
             from_user = data['from']
             message = data['message']
             print '\n' + from_user + ' said: ' + message
-        elif command == 'LOGOUT':
+        elif instruction == 'LOGOUT':
             message = data['message']
             s.close()
             print '\n' + message
@@ -59,10 +58,10 @@ class ClientUtils:
         # print('s: ' + s)
         # print('addr: ' + addr)
 
-    def authenticate(self, username, password):
+    def login(self, username, password):
         try:
             s = Connection.connect(self.server['host'], self.server['port'])
-            command = {'command': 'AUTH', 'from': username}
+            command = {'command': 'LOGIN', 'from': username}
             data = {'password': password}
             Connection.send(s, command, data)
 
@@ -75,6 +74,7 @@ class ClientUtils:
                 self.port = data['port']
                 print data['message']
 
+                # if the user has offline messages, print them out
                 if len(data['offline_messages']) > 0:
                     print 'You have got some offline messages:'
                     for offline_message in data['offline_messages']:
@@ -88,10 +88,10 @@ class ClientUtils:
             # print "Failed to connect to the server " + self.server['host'] + " on port: " + str(self.server['port'])
             os._exit(1)
 
-    def create_command(self, command):
+    def __create_command_json(self, command):
         """
+        All the commands from the client should eventually transform in this json format.
         """
-
         return {'command': command, 'from': self.username}
 
     def broadcast(self, message):
@@ -99,7 +99,7 @@ class ClientUtils:
         """
         data = {'message': message}
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.create_command('BROADCAST'), data)
+        Connection.send(s, self.__create_command_json('BROADCAST'), data)
 
         (cmd, data) = Connection.receive(s)
         print cmd['command'] + ' - ' + data['message']
@@ -108,13 +108,13 @@ class ClientUtils:
 
     def send_message(self, message_to, message):
         """
-        :param message_to:
+        :param message_to: a list of usernames that the message is supposed to sent to
         :param message:
         :return:
         """
         data = {'message': message, "message_to": message_to}
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.create_command('SEND'), data)
+        Connection.send(s, self.__create_command_json('SEND'), data)
 
         (cmd, data) = Connection.receive(s)
         print data['message']
@@ -123,12 +123,12 @@ class ClientUtils:
 
     def logout(self):
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.create_command("LOGOUT"), {})
+        Connection.send(s, self.__create_command_json("LOGOUT"), {})
         s.close()
 
     def who(self):
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.create_command("WHO"), {})
+        Connection.send(s, self.__create_command_json("WHO"), {})
 
         (cmd, data) = Connection.receive(s)
         message = data['message']
@@ -141,8 +141,12 @@ class ClientUtils:
         s.close()
 
     def last(self, number):
+        """
+        :param number: the unit should be in minute
+        :return:
+        """
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.create_command("LAST"), {'number': number})
+        Connection.send(s, self.__create_command_json("LAST"), {'number': number})
 
         (cmd, data) = Connection.receive(s)
         message = data['message']
@@ -155,10 +159,13 @@ class ClientUtils:
         s.close()
 
     def check(self, target):
+        """
+        A simple debug command to print out a specific user's information.
+        """
         if target == '':  # if the target if not specified, then check yourself
             target = self.username
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.create_command("CHECK"), {'target': target})
+        Connection.send(s, self.__create_command_json("CHECK"), {'target': target})
 
         (cmd, data) = Connection.receive(s)
         message = data['message']

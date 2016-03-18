@@ -7,7 +7,7 @@ import os
 
 
 class ServerUtils:
-    CHECK_FREQUENCY = 10
+    CHECK_FREQUENCY = 10  # this is frequency that the server checks if a client should be disconnected
 
     def __init__(self, port, block_time, time_out):
         self.port = port
@@ -19,23 +19,26 @@ class ServerUtils:
 
     def start(self):
         """
-        Start the server and wait for connections.
+        1. Bind the server to the specified port.
+        2. Open a thread to listen from the clients.
+        3. Open another thread to constantly check if a client has been idle for a specific time.
         """
         ip = gethostbyname(gethostname())
         # ip = 'localhost'
         try:
             s = Connection.bind(ip, self.port)
             print 'Server (' + ip + ':' + str(self.port) + ') has started....'
-            Thread(target=self.check_client, args=()).start()
+            Thread(target=self.__client_idle_checker, args=()).start()
+
             while True:
                 try:
                     conn, addr = s.accept()
-                    Thread(target=self.listen_client, args=(conn, addr)).start()
-                except (KeyboardInterrupt, SystemExit):
+                    Thread(target=self.__client_listener, args=(conn, addr)).start()
+                except KeyboardInterrupt, msg:
                     for username in self.users:  # log all users out
                         user = self.users[username]
                         if Authenticator.is_online(user):
-                            (ip, port) = Authenticator.user_address(user)
+                            (ip, port) = Authenticator.get_user_address(user)
                             command = {'command': 'LOGOUT'}
                             message = {'from': 'SERVER', 'message': 'You have been disconnected by the server because the server is shutting down.'}
                             socket_to = Connection.connect(ip, port)
@@ -46,11 +49,13 @@ class ServerUtils:
                     s.close()
                     print '\nThank you for using this chat room. All connected users have been disconnected. See you next time!'
                     os._exit(0)
+
         except:
             os._exit(1)
 
-    def listen_client(self, s, addr):
+    def __client_listener(self, s, addr):
         """
+        This method listens the command from a client.
         """
         print addr, "is trying to connect."
         (command, data) = Connection.receive(s)
@@ -60,7 +65,7 @@ class ServerUtils:
         instruction = command['command']
         from_user = command['from']
 
-        if instruction == 'AUTH':
+        if instruction == 'LOGIN':
             self.authenticate(s, from_user, data, addr)
         elif instruction == 'BROADCAST':
             self.broadcast(s, from_user, data)
@@ -82,7 +87,11 @@ class ServerUtils:
 
         s.close()
 
-    def check_client(self):
+    def __client_idle_checker(self):
+        """
+        This listener constantly (defined by the CHECK_FREQUENCY) checks if a client has been idle for a specific period.
+        If yes, this client should be disconnected by the server.
+        """
         while True:
             print 'Checking idle users...'
             for username in self.users:
@@ -92,7 +101,7 @@ class ServerUtils:
                     if last_seen:
                         idle = (datetime.datetime.now() - last_seen).total_seconds()
                         if idle > self.time_out:  # automatically log the user out
-                            (ip, port) = Authenticator.user_address(user)
+                            (ip, port) = Authenticator.get_user_address(user)
                             command = {'command': 'LOGOUT'}
                             message = {'from': 'SERVER', 'message': 'You have been disconnected by the server due to being inactive.'}
                             socket_to = Connection.connect(ip, port)
@@ -106,13 +115,13 @@ class ServerUtils:
             print 'Done checking.'
             time.sleep(self.CHECK_FREQUENCY)
 
-
     def authenticate(self, s, from_user, data, addr):
         (command, response) = Authenticator.authenticate(from_user, data, addr, self.block_time)
         Connection.send(s, command, response)
 
     def broadcast(self, s, from_user, data):
         """
+        The message from the client will be sent to all other online clients.
         """
         sender_username = from_user
         message = data['message']
@@ -124,7 +133,7 @@ class ServerUtils:
             user = self.users[username]
             if Authenticator.is_online(user):
                 if username != sender_username:
-                    (ip, port) = Authenticator.user_address(user)
+                    (ip, port) = Authenticator.get_user_address(user)
                     try:
                         socket_to = Connection.connect(ip, port)
                         resp_cmd = {'command': 'MESSAGE'}
@@ -160,7 +169,7 @@ class ServerUtils:
                 user = self.users[username]
                 if Authenticator.is_online(user):
                     if username != sender_username:  # should not self message to yourself
-                        (ip, port) = Authenticator.user_address(user)
+                        (ip, port) = Authenticator.get_user_address(user)
                         try:
                             socket_to = Connection.connect(ip, port)
                             resp_cmd = {'command': 'MESSAGE'}
@@ -193,6 +202,10 @@ class ServerUtils:
         Connection.send(s, {'command': status}, {'message': response})
 
     def __store_offline_message(self, user, username, sender_username, message):
+        """
+        The offline messages will be stored in a text file,
+        so that when the server is restarted, these messages will not be lost.
+        """
         offline_message = {'sender': sender_username, 'message': message}
         user['offline_messages'].append(offline_message)
 
@@ -203,13 +216,10 @@ class ServerUtils:
 
     def logout(self, username, is_forced=False):
         """
-        :param s:
-        :param username:
-        :param is_forced:
-        :return:
+        This method resets some of the user information.
         """
         user = self.users[username]
-        # (ip, port) = self.user_address(user)
+        # (ip, port) = self.get_user_address(user)
         # command = {'command': 'LOGOUT'}
         # message = {'from': sender_username, 'message': 'You have logged out.'}
         # socket_to = Connection.connect(ip, port)
@@ -219,15 +229,13 @@ class ServerUtils:
         # clear the login information
         user['ip'] = ''
         user['port'] = 0
-        if not is_forced:
+        if not is_forced:  # if the user is logged out by the server, then the last_seen attribute should not be updated.
             user['last_seen'] = datetime.datetime.now()
         user['session'] = False
         # user['login_attempts'] = 0
 
     def who(self, s, from_user):
         """
-        :param from_user:
-        :return:
         """
         online_users = []
         sender_username = from_user
@@ -243,10 +251,7 @@ class ServerUtils:
 
     def last(self, s, from_user, data):
         """
-        :param s:
-        :param from_user:
-        :param data:
-        :return:
+        This method mainly checks the last_seen attribute of a user.
         """
         users = []
         for username in self.users:
@@ -263,10 +268,7 @@ class ServerUtils:
 
     def check(self, s, from_user, data):
         """
-        :param s:
-        :param from_user:
-        :param data:
-        :return:
+        This methods is mainly used for debugging.
         """
         target = data['target']
         command = {'command': 'ok'}

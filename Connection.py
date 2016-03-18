@@ -3,6 +3,9 @@ import json
 
 
 class Connection:
+    """
+    This class contains the general socket methods.
+    """
     @staticmethod
     def bind(host, port):
         try:
