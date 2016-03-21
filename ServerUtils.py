@@ -69,27 +69,30 @@ class ServerUtils:
             self.authenticate(s, from_user, data, addr)
         elif instruction == 'BROADCAST':
             self.broadcast(s, from_user, data)
-            Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()  # should update user's last_seen if the user has done something
+            Authenticator.users[from_user]['last_active'] = datetime.datetime.now()  # should update user's last_active if the user has done something
         elif instruction == 'SEND':
             self.send_message(s, from_user, data)
-            Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
+            Authenticator.users[from_user]['last_active'] = datetime.datetime.now()
         elif instruction == 'LOGOUT':
             self.logout(from_user)
         elif instruction == 'WHO':
             self.who(s, from_user)
-            Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
+            Authenticator.users[from_user]['last_active'] = datetime.datetime.now()
         elif instruction == 'LAST':
             self.last(s, from_user, data)
-            Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
+            Authenticator.users[from_user]['last_active'] = datetime.datetime.now()
         elif instruction == 'CHECK':
             self.check(s, from_user, data)
-            Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
+            Authenticator.users[from_user]['last_active'] = datetime.datetime.now()
         elif instruction == 'BLACKLIST':
             self.blacklist(s, from_user, data)
-            Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
+            Authenticator.users[from_user]['last_active'] = datetime.datetime.now()
         elif instruction == 'WHITELIST':
             self.whitelist(s, from_user, data)
-            Authenticator.users[from_user]['last_seen'] = datetime.datetime.now()
+            Authenticator.users[from_user]['last_active'] = datetime.datetime.now()
+        elif instruction == 'ACTIVE':
+            self.active(s, from_user, data)
+            Authenticator.users[from_user]['last_active'] = datetime.datetime.now()
 
         s.close()
 
@@ -103,9 +106,9 @@ class ServerUtils:
             for username in self.users:
                 user = self.users[username]
                 if Authenticator.is_online(user):  # only check the online users
-                    last_seen = user['last_seen']
-                    if last_seen:
-                        idle = (datetime.datetime.now() - last_seen).total_seconds()
+                    last_active = user['last_active']
+                    if last_active:
+                        idle = (datetime.datetime.now() - last_active).total_seconds()
                         if idle > self.time_out:  # automatically log the user out
                             (ip, port) = Authenticator.get_user_address(user)
                             command = {'command': 'LOGOUT'}
@@ -228,8 +231,8 @@ class ServerUtils:
         # clear the login information
         user['ip'] = ''
         user['port'] = 0
-        if not is_forced:  # if the user is logged out by the server, then the last_seen attribute should not be updated.
-            user['last_seen'] = datetime.datetime.now()
+        if not is_forced:  # if the user is logged out by the server, then the last_active attribute should not be updated.
+            user['last_active'] = datetime.datetime.now()
         user['session'] = False
         # user['login_attempts'] = 0
 
@@ -239,10 +242,10 @@ class ServerUtils:
         online_users = []
         sender_username = from_user
         for username in self.users:
-            if username != sender_username:
-                user = self.users[username]
-                if Authenticator.is_online(user):
-                    online_users.append(username)
+            # if username != sender_username:  #UPDATED: should include the querying user
+            user = self.users[username]
+            if Authenticator.is_online(user):
+                online_users.append(username)
 
         command = {'command': 'ok'}
         message = {'from': sender_username, 'message': online_users}
@@ -250,15 +253,20 @@ class ServerUtils:
 
     def last(self, s, from_user, data):
         """
-        This method mainly checks the last_seen attribute of a user.
+        1. Include those users that are online.
+        2. If a user is not online, compare its last_active attribute with the number provided,
+           since the last_active attribute is updated after the user logs out.
         """
         users = []
         for username in self.users:
             user = self.users[username]
-            last_seen = user['last_seen']
-            if last_seen is not None:
-                if (datetime.datetime.now() - last_seen).total_seconds() <= data['number'] * 60:
-                    users.append(username)
+            if Authenticator.is_online(user):  # if the user is currently online, simply add it to the list
+                users.append(username)
+            else:  # if the user if offline, compare the number with its last_active attribute
+                last_active = user['last_active']
+                if last_active is not None:
+                    if (datetime.datetime.now() - last_active).total_seconds() <= data['number'] * 60:
+                        users.append(username)
 
         sender_username = from_user
         command = {'command': 'ok'}
@@ -328,4 +336,21 @@ class ServerUtils:
                 message += 'For user ' + target + ': You have no reason to remove yourself from the blacklist :)\n'
 
         message = {'message': message}
+        Connection.send(s, command, message)
+
+    def active(self, s, from_user, data):
+        """
+        This method mainly checks the last_active attribute of a user
+        """
+        users = []
+        for username in self.users:
+            user = self.users[username]
+            last_active = user['last_active']
+            if last_active is not None:
+                if (datetime.datetime.now() - last_active).total_seconds() <= data['number'] * 60:
+                    users.append(username)
+
+        sender_username = from_user
+        command = {'command': 'ok'}
+        message = {'from': sender_username, 'message': users}
         Connection.send(s, command, message)

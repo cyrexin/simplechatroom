@@ -27,7 +27,7 @@ class Authenticator:
                 'offline_messages': [],
                 'ip': '',
                 'port': 0,
-                'last_seen': None,
+                'last_active': None,
                 'login_attempts': {},
                 'last_attempt': {},
                 'session': False,  # used for checking if the user is online
@@ -124,7 +124,7 @@ class Authenticator:
 
                     user['ip'] = addr[0]
                     user['port'] = random.randint(10000, 50000)  # assign a random port to the client TODO:maybe there is a better way
-                    user['last_seen'] = datetime.datetime.now()
+                    user['last_active'] = datetime.datetime.now()
                     user['session'] = True
 
                     if user_ip in user['login_attempts']:

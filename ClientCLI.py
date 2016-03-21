@@ -151,5 +151,13 @@ class ClientCLI:
                     else:
                         print 'The parameters are invalid. Usage: %s <user> or %s (<user>...<user>)' % (command, command)
 
+            # to check what users are active within the last specific minutes
+            elif command == 'active':
+                if len(params) > 0 and Utils.is_number(params) and int(params) > 0 and int(params) <= 60:
+                    number = int(params)
+                    self.client.active(number)
+                else:
+                    print 'The parameters are invalid. Usage: active <number>, where 0 < number <= 60'
+
             else:
                 print command + ' - is an invalid command.'

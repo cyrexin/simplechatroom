@@ -123,12 +123,12 @@ class ClientUtils:
 
     def logout(self):
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.__create_instruction_json("LOGOUT"), {})
+        Connection.send(s, self.__create_instruction_json('LOGOUT'), {})
         s.close()
 
     def who(self):
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.__create_instruction_json("WHO"), {})
+        Connection.send(s, self.__create_instruction_json('WHO'), {})
 
         (cmd, data) = Connection.receive(s)
         message = data['message']
@@ -146,7 +146,7 @@ class ClientUtils:
         :return:
         """
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.__create_instruction_json("LAST"), {'number': number})
+        Connection.send(s, self.__create_instruction_json('LAST'), {'number': number})
 
         (cmd, data) = Connection.receive(s)
         message = data['message']
@@ -165,7 +165,7 @@ class ClientUtils:
         if target == '':  # if the target if not specified, then check yourself
             target = self.username
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.__create_instruction_json("CHECK"), {'target': target})
+        Connection.send(s, self.__create_instruction_json('CHECK'), {'target': target})
 
         (cmd, data) = Connection.receive(s)
         message = data['message']
@@ -181,5 +181,23 @@ class ClientUtils:
 
         (cmd, data) = Connection.receive(s)
         print data['message']
+
+        s.close()
+
+    def active(self, number):
+        """
+        :param number: the unit should be in minute
+        :return:
+        """
+        s = Connection.connect(self.server['host'], self.server['port'])
+        Connection.send(s, self.__create_instruction_json('ACTIVE'), {'number': number})
+
+        (cmd, data) = Connection.receive(s)
+        message = data['message']
+        if cmd['command'] != 'OK':
+            output = ''
+            for username in message:
+                output += username + ' '
+            print output
 
         s.close()
