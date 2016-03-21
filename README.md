@@ -1,7 +1,7 @@
 # Simple Chatroom
 
 ### Brief description
-This simple chatroom is developed by Python 2.7 mainly using the socket module. It adpots the server-client structure, where clients can send messages to each other via the server. Some elementary security features are also included in this system. The github space for this project is: https://github.com/cyrexin/simplechatroom
+This simple chatroom is developed by Python 2.7 mainly using the socket module. It adopts the server-client structure, where clients can send messages to each other via the server. Some elementary security features are also included in this system. The Github space for this project is: https://github.com/cyrexin/simplechatroom
 
 ### Details on development environment
 This program is written and complied by Python 2.7.3. The text file user_pass.txt contains all the usernames and encrypted passwords. This file is included in the folder. If it is missing by accident, or you cannot log in, simply run the following command and the text file will be created/updated:
@@ -66,7 +66,7 @@ send facebook How are you?
 // Send a private message "How are you guys?" to the users "facebook", "windows" and "google".
 send (facebook windows google) How are you guys?
 ```
-After the user type this command, a feedback for the message status to each user will be displayed (eg. To facebook: You message has been sent! To google: google is not online. You message has been stored as an offline message.). If the receiving user is not online, the message will be saved as an offline message. When this user comes back online again, the offline messages will be displayed.
+After the user type this command, a feedback for the message status to each user will be displayed (e.g. To facebook: You message has been sent! To google: google is not online. You message has been stored as an offline message.). If the receiving user is not online, the message will be saved as an offline message. When this user comes back online again, the offline messages will be displayed.
 
 #### logout
 ```
@@ -74,9 +74,9 @@ After the user type this command, a feedback for the message status to each user
 logout
 ```
 
-### Additional funtionalities
+### Additional functionalities
 #### Offline messages
-As mentioned above, when a user sends a private message to another, if the receiving user is not online, the message will be stored as an offline message. When this user comes back online again, the offline messages will be displayed. These offline messages will be stored in a text file named "offline_message_<username>.txt" where <username> is the username of the receiving user. This text file can ensure that even if the server is restarted, these offline messages will NOT be lost. After the offline messages have been displayed, this text file will be remoevd from the disk.
+As mentioned above, when a user sends a private message to another, if the receiving user is not online, the message will be stored as an offline message. When this user comes back online again, the offline messages will be displayed. These offline messages will be stored in a text file named "offline_message_<username>.txt" where <username> is the username of the receiving user. This text file can ensure that even if the server is restarted, these offline messages will NOT be lost. After the offline messages have been displayed, this text file will be removed from the disk.
 
 To test this functionality is simple. The following is a sample procedure:
 - Log out all the users.
@@ -85,7 +85,7 @@ To test this functionality is simple. The following is a sample procedure:
 ```
 send google Hello Google!
 ```
-- Now a text file "offline_message_google.txt" should be created. use another client window to log in as google.
+- Now a text file "offline_message_google.txt" should be created. Use another client window to log in as google.
 - The user google should see the offline message from facebook.
 
 #### Blacklist
@@ -119,7 +119,7 @@ whitelist google
 - Back to the google window and send a message to facebook. Now the message should be sent successfully again.
 
 #### Command "active"
-Every time a user type a command, its "last_active" attribute will be updated. With the "active" command, a user can check which users are active within the last specific minutes. The format of this command is very similar to "last":
+Every time a user types a command, its "last_active" attribute will be updated. With the "active" command, a user can check which users are active within the last specific minutes. The format of this command is very similar to "last":
 ```
 active <number>
 ```
@@ -135,3 +135,8 @@ check
 // Check the information of others.
 check <user>
 ```
+
+### Some notes:
+- If a client is idle for a specific period, it will be logged out by the server automatically. This period is defined by the environment variable TIME_OUT, with the default value as 30*60 seconds.
+- If a user attempts to log in with an incorrect password for 3 consecutive times, this IP will be blocked for a certain period for this username. The period is defined by the environment variable BLOCK_TIME, with the default value as 60 seconds.
+- You can use "Ctrl+C" to terminate a client or the server. When the client is terminated, it will be properly logged out. When the server is terminated, all the connected clients will be properly logged out.
