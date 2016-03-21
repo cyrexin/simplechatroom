@@ -14,8 +14,8 @@ def main():
     if len(sys.argv) == 2:
         port = sys.argv[1]
         if Utils.is_number(port):
-            s = ServerUtils(int(port), BLOCK_TIME, TIME_OUT)
-            s.start()
+            server = ServerUtils(int(port), BLOCK_TIME, TIME_OUT)
+            server.start()
         else:
             print 'Port must be an integer.'
     else:

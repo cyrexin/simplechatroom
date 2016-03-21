@@ -9,8 +9,8 @@ def main():
         port = sys.argv[2]
 
         if Utils.is_number(port):
-            c = ClientCLI(server, int(port))
-            c.start()
+            client = ClientCLI(server, int(port))
+            client.start()
         else:
             print 'Port must be an integer.'
     else:

@@ -14,7 +14,7 @@ class ClientUtils:
         self.port = 0
         self.authorized = False
 
-    def start(self):
+    def invoke(self):
         """
         """
         if self.authorized:

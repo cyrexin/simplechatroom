@@ -21,7 +21,7 @@ class ClientCLI:
 
         try:
             self.__login()
-            self.client.start()
+            self.client.invoke()
             self.__interface()
         except KeyboardInterrupt, msg:
             if self.client.authorized:
