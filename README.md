@@ -14,9 +14,12 @@ $ python PopulateCredential.py
 ```
 $ python Server.py 4119
 ```
-- To run the client, type the following command, where <server_IP_address> can be found on the server side:
+- To run the client, type the following command, where "server_IP_address" can be found on the server side:
 ```
 $ python Client.py <server_IP_address> <server_port_no>
+
+// example
+$ python Client 192.168.1.100 4119
 ```
 
 ### Sample commands
@@ -76,7 +79,7 @@ logout
 
 ### Additional functionalities
 #### Offline messages
-As mentioned above, when a user sends a private message to another, if the receiving user is not online, the message will be stored as an offline message. When this user comes back online again, the offline messages will be displayed. These offline messages will be stored in a text file named "offline_message_<username>.txt" where <username> is the username of the receiving user. This text file can ensure that even if the server is restarted, these offline messages will NOT be lost. After the offline messages have been displayed, this text file will be removed from the disk.
+As mentioned above, when a user sends a private message to another, if the receiving user is not online, the message will be stored as an offline message. When this user comes back online again, the offline messages will be displayed. These offline messages will be stored in a text file named "offline_message_(username).txt" where (username) is the username of the receiving user. This text file can ensure that even if the server is restarted, these offline messages will NOT be lost. After the offline messages have been displayed, this text file will be removed from the disk.
 
 To test this functionality is simple. The following is a sample procedure:
 - Log out all the users.
