@@ -39,10 +39,9 @@ class ServerUtils:
                         user = self.users[username]
                         if Authenticator.is_online(user):
                             (ip, port) = Authenticator.get_user_address(user)
-                            command = {'command': 'LOGOUT'}
-                            message = {'from': 'SERVER', 'message': 'You have been disconnected by the server because the server is shutting down.'}
+                            data_json = {'command': 'LOGOUT', 'from': 'SERVER', 'message': 'You have been disconnected by the server because the server is shutting down.'}
                             socket_to = Connection.connect(ip, port)
-                            Connection.send(socket_to, command, message)
+                            Connection.send(socket_to, data_json)
                             socket_to.close()
                             self.logout(username, True)
 
