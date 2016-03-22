@@ -100,29 +100,23 @@ class Authenticator:
             # print user
 
             # should reset locking status for the IP if the block_time has passed
-            if user_ip in user['last_attempt']:
-                since_last = (datetime.datetime.now() - user['last_attempt'][user_ip]).total_seconds()
-                if since_last > block_time:
-                    if user_ip in user['locked']:
-                        user['locked'][user_ip] = False
-
-            user['last_attempt'][user_ip] = datetime.datetime.now()
+            Authenticator.__reset_locked_status(user_ip, user, block_time)
 
             if user_ip not in user['locked'] or not user['locked'][user_ip]:
                 if user['password'] == password:
                     if Authenticator.is_online(user):  # if the user has been online, disconnect it from other machine.
                         try:
                             (ip, port) = Authenticator.get_user_address(user)
-                            socket_old = Connection.connect(ip, port)
+                            socket_online = Connection.connect(ip, port)
                             command = {'command': 'LOGOUT'}
                             print addr
                             message = username + ' has connected from address: ' + addr[0] + '. You will be disconnected.'
-                            Connection.send(socket_old, command, {'message': message})
-                            socket_old.close()
+                            Connection.send(socket_online, command, {'message': message})
+                            socket_online.close()
                         except:
-                            print 'Can not connect to old socket.'
+                            print 'Cannot connect to old socket.'
 
-                    user['ip'] = addr[0]
+                    user['ip'] = user_ip
                     user['port'] = random.randint(10000, 50000)  # assign a random port to the client TODO:maybe there is a better way
                     user['last_active'] = datetime.datetime.now()
                     user['session'] = True
@@ -166,3 +160,13 @@ class Authenticator:
 
         command = {'command': command}
         return command, response
+
+    @staticmethod
+    def __reset_locked_status(user_ip, user, block_time):
+        if user_ip in user['last_attempt']:
+            since_last = (datetime.datetime.now() - user['last_attempt'][user_ip]).total_seconds()
+            if since_last > block_time:
+                if user_ip in user['locked']:
+                    user['locked'][user_ip] = False
+
+        user['last_attempt'][user_ip] = datetime.datetime.now()
