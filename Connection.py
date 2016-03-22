@@ -32,18 +32,17 @@ class Connection:
             raise
 
     @staticmethod
-    def send(s, command, data):
+    def send(s, data_json):
         """
         """
-        combined_json = [command, data]
         try:
-            data_json = json.dumps(combined_json)
+            data_json = json.dumps(data_json)
             # print 'data_json: ' + data_json
             s.send("%d\n" % len(data_json))
             s.send(data_json)
         except:
             print "Failed to send data:"
-            print combined_json
+            print data_json
             raise
 
 

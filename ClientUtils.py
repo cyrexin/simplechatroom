@@ -39,17 +39,17 @@ class ClientUtils:
         """
         This is the thread that client listens to the message from the server.
         """
-        (command, data) = Connection.receive(s)
+        data_json = Connection.receive(s)
 
-        instruction = command['command']
+        instruction = data_json['command']
         # print 'command: ' + command
 
         if instruction == 'MESSAGE':
-            from_user = data['from']
-            message = data['message']
+            from_user = data_json['from']
+            message = data_json['message']
             print '\n' + from_user + ' said: ' + message
         elif instruction == 'LOGOUT':
-            message = data['message']
+            message = data_json['message']
             s.close()
             print '\n' + message
             # sys.exit(0)
@@ -58,16 +58,22 @@ class ClientUtils:
         # print('s: ' + s)
         # print('addr: ' + addr)
 
+    def __create_instruction_json(self, instruction, data):
+        """
+        All the commands from the client should eventually transform in this json format.
+        """
+        return {'from': self.username, 'instruction': instruction, 'data': data}
+
     def login(self, username, password):
         try:
             s = Connection.connect(self.server['host'], self.server['port'])
-            command = {'instruction': 'LOGIN', 'from': username}
-            data = {'password': password}
-            Connection.send(s, command, data)
+            data_json = {'instruction': 'LOGIN', 'from': username, 'data': {'password': password}}
+            Connection.send(s, data_json)
 
-            (cmd, data) = Connection.receive(s)
+            data_json = Connection.receive(s)
+            data = data_json['response']
             s.close()
-            if cmd['command'] == 'OK':
+            if data_json['command'] == 'OK':
                 self.authorized = True
                 self.username = username
                 self.addr = data['ip']
@@ -82,27 +88,21 @@ class ClientUtils:
 
                 return True
             else:
-                print data['message']
+                print data_json['command'] + ' - ' + data['message']
                 return False
         except:
             # print "Failed to connect to the server " + self.server['host'] + " on port: " + str(self.server['port'])
             os._exit(1)
-
-    def __create_instruction_json(self, instruction):
-        """
-        All the commands from the client should eventually transform in this json format.
-        """
-        return {'from': self.username, 'instruction': instruction}
 
     def broadcast(self, message):
         """
         """
         data = {'message': message}
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.__create_instruction_json('BROADCAST'), data)
+        Connection.send(s, self.__create_instruction_json('BROADCAST', data))
 
-        (cmd, data) = Connection.receive(s)
-        print cmd['command'] + ' - ' + data['message']
+        data_json = Connection.receive(s)
+        print data_json['command'] + ' - ' + data_json['message']
 
         s.close()
 
@@ -114,25 +114,25 @@ class ClientUtils:
         """
         data = {'message': message, "message_to": message_to}
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.__create_instruction_json('SEND'), data)
+        Connection.send(s, self.__create_instruction_json('SEND', data))
 
-        (cmd, data) = Connection.receive(s)
-        print data['message']
+        data_json = Connection.receive(s)
+        print data_json['message']
 
         s.close()
 
     def logout(self):
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.__create_instruction_json('LOGOUT'), {})
+        Connection.send(s, self.__create_instruction_json('LOGOUT', {}))
         s.close()
 
     def who(self):
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.__create_instruction_json('WHO'), {})
+        Connection.send(s, self.__create_instruction_json('WHO', {}))
 
-        (cmd, data) = Connection.receive(s)
-        message = data['message']
-        if cmd['command'] != 'OK':
+        data_json = Connection.receive(s)
+        message = data_json['message']
+        if data_json['command'] == 'OK':
             output = ''
             for username in message:
                 output += username + ' '
@@ -145,12 +145,13 @@ class ClientUtils:
         :param number: the unit should be in minute
         :return:
         """
+        data = {'number': number}
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.__create_instruction_json('LAST'), {'number': number})
+        Connection.send(s, self.__create_instruction_json('LAST', data))
 
-        (cmd, data) = Connection.receive(s)
-        message = data['message']
-        if cmd['command'] != 'OK':
+        data_json = Connection.receive(s)
+        message = data_json['message']
+        if data_json['command'] == 'OK':
             output = ''
             for username in message:
                 output += username + ' '
@@ -164,12 +165,13 @@ class ClientUtils:
         """
         if target == '':  # if the target if not specified, then check yourself
             target = self.username
+        data = {'target': target}
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.__create_instruction_json('CHECK'), {'target': target})
+        Connection.send(s, self.__create_instruction_json('CHECK', data))
 
-        (cmd, data) = Connection.receive(s)
-        message = data['message']
-        if cmd['command'] != 'OK':
+        data_json = Connection.receive(s)
+        message = data_json['message']
+        if data_json['command'] == 'OK':
             print message
 
         s.close()
@@ -177,10 +179,10 @@ class ClientUtils:
     def update_blacklist(self, targets, command):
         data = {'targets': targets}
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.__create_instruction_json(command.upper()), data)
+        Connection.send(s, self.__create_instruction_json(command.upper(), data))
 
-        (cmd, data) = Connection.receive(s)
-        print data['message']
+        data_json = Connection.receive(s)
+        print data_json['message']
 
         s.close()
 
@@ -189,12 +191,13 @@ class ClientUtils:
         :param number: the unit should be in minute
         :return:
         """
+        data = {'number': number}
         s = Connection.connect(self.server['host'], self.server['port'])
-        Connection.send(s, self.__create_instruction_json('ACTIVE'), {'number': number})
+        Connection.send(s, self.__create_instruction_json('ACTIVE', data))
 
-        (cmd, data) = Connection.receive(s)
-        message = data['message']
-        if cmd['command'] != 'OK':
+        data_json = Connection.receive(s)
+        message = data_json['message']
+        if data_json['command'] == 'OK':
             output = ''
             for username in message:
                 output += username + ' '

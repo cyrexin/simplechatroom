@@ -58,12 +58,13 @@ class ServerUtils:
         This method listens the command from a client.
         """
         print addr, "is trying to connect."
-        (command, data) = Connection.receive(s)
-        print 'command: %s' % command
+        data_json = Connection.receive(s)
+        data = data_json['data']
+        print 'data_json: %s' % data_json
         print 'data: %s' % data
 
-        from_user = command['from']
-        instruction = command['instruction']
+        from_user = data_json['from']
+        instruction = data_json['instruction']
 
         if instruction == 'LOGIN':
             self.authenticate(s, from_user, data, addr)
@@ -111,10 +112,9 @@ class ServerUtils:
                         idle = (datetime.datetime.now() - last_active).total_seconds()
                         if idle > self.time_out:  # automatically log the user out
                             (ip, port) = Authenticator.get_user_address(user)
-                            command = {'command': 'LOGOUT'}
-                            message = {'from': 'SERVER', 'message': 'You have been disconnected by the server due to being inactive.'}
+                            data_json = {'command': 'LOGOUT', 'from': 'SERVER', 'message': 'You have been disconnected by the server due to being inactive.'}
                             socket_to = Connection.connect(ip, port)
-                            Connection.send(socket_to, command, message)
+                            Connection.send(socket_to, data_json)
                             socket_to.close()
 
                             # clear the login information
@@ -125,8 +125,8 @@ class ServerUtils:
             time.sleep(self.CHECK_FREQUENCY)
 
     def authenticate(self, s, from_user, data, addr):
-        (command, response) = Authenticator.authenticate(from_user, data, addr, self.block_time)
-        Connection.send(s, command, response)
+        data_json = Authenticator.authenticate(from_user, data, addr, self.block_time)
+        Connection.send(s, data_json)
 
     def broadcast(self, s, from_user, data):
         """
@@ -135,8 +135,6 @@ class ServerUtils:
         sender_username = from_user
         message = data['message']
 
-        command = {'command': 'OK'}
-        response = 'You message has been broadcast!'
         sender = self.users[sender_username]
         for username in self.users:
             user = self.users[username]
@@ -145,9 +143,8 @@ class ServerUtils:
                     (ip, port) = Authenticator.get_user_address(user)
                     try:
                         socket_to = Connection.connect(ip, port)
-                        resp_cmd = {'command': 'MESSAGE'}
-                        json_message = {'from': sender_username, 'message': message}
-                        Connection.send(socket_to, resp_cmd, json_message)
+                        data_json = {'command': 'MESSAGE', 'from': sender_username, 'message': message}
+                        Connection.send(socket_to, data_json)
                         socket_to.close()
                     except:
                         print 'Could not deliver to: ' + ip + ' port: ' + str(port)
@@ -155,7 +152,9 @@ class ServerUtils:
             #     offline_message = {'sender': sender_username, 'message': message}
             #     user['offline_messages'].append(offline_message)
 
-        Connection.send(s, command, {'message': response})
+        response = 'You message has been broadcast!'
+        data_json = {'command': 'OK', 'message': response}
+        Connection.send(s, data_json)
 
     def send_message(self, s, from_user, data):
         """
@@ -182,9 +181,8 @@ class ServerUtils:
                             (ip, port) = Authenticator.get_user_address(user)
                             try:
                                 socket_to = Connection.connect(ip, port)
-                                resp_cmd = {'command': 'MESSAGE'}
-                                json_message = {'from': sender_username, 'message': message}
-                                Connection.send(socket_to, resp_cmd, json_message)
+                                data_json = {'command': 'MESSAGE', 'from': sender_username, 'message': message}
+                                Connection.send(socket_to,data_json)
                                 socket_to.close()
 
                                 response += 'To ' + username + ': ' + 'You message has been sent!\n'
@@ -201,7 +199,7 @@ class ServerUtils:
             else:
                 response += 'To ' + username + ': ' + 'User ' + username + ' is not found.\n'
 
-        Connection.send(s, {'command': status}, {'message': response})
+        Connection.send(s, {'command': status, 'message': response})
 
     def __store_offline_message(self, user, username, sender_username, message):
         """
@@ -247,9 +245,8 @@ class ServerUtils:
             if Authenticator.is_online(user):
                 online_users.append(username)
 
-        command = {'command': 'ok'}
-        message = {'from': sender_username, 'message': online_users}
-        Connection.send(s, command, message)
+        data_json = {'command': 'OK', 'from': sender_username, 'message': online_users}
+        Connection.send(s, data_json)
 
     def last(self, s, from_user, data):
         """
@@ -269,33 +266,31 @@ class ServerUtils:
                         users.append(username)
 
         sender_username = from_user
-        command = {'command': 'ok'}
-        message = {'from': sender_username, 'message': users}
-        Connection.send(s, command, message)
+        data_json = {'command': 'OK', 'from': sender_username, 'message': users}
+        Connection.send(s, data_json)
 
     def check(self, s, from_user, data):
         """
         This methods is mainly used for debugging.
         """
         target = data['target']
-        command = {'command': 'ok'}
         sender_username = from_user
+        data_json = {}
         if target in self.users:
             user = self.users[target]
             #if Authenticator.is_online(user):  # for better debugging, this line may not be necessary
-            message = {'from': sender_username, 'message': str(user)}
+            data_json = {'command': 'OK', 'from': sender_username, 'message': str(user)}
             #else:
             #    message = {'from': sender_username, 'message': 'User ' + target + ' is not online.'}
         else:
-            message = {'from': sender_username, 'message': 'User ' + target + ' is not found.'}
-        Connection.send(s, command, message)
+            data_json = {'command': 'OK', 'from': sender_username, 'message': 'User ' + target + ' is not found.'}
+        Connection.send(s, data_json)
 
     def blacklist(self, s, from_user, data):
         """
         This methods is used to add users in the blacklist.
         """
         targets = data['targets']
-        command = {'command': 'ok'}
         message = ''
         sender_user = self.users[from_user]
         for target in targets:
@@ -311,15 +306,14 @@ class ServerUtils:
             else:
                 message += 'For user ' + target + ': You cannot blacklist yourself.\n'
 
-        message = {'message': message}
-        Connection.send(s, command, message)
+        data_json = {'command': 'OK', 'message': message}
+        Connection.send(s, data_json)
 
     def whitelist(self, s, from_user, data):
         """
         This methods is used to remove users from the blacklist.
         """
         targets = data['targets']
-        command = {'command': 'ok'}
         message = ''
         sender_user = self.users[from_user]
         for target in targets:
@@ -335,8 +329,8 @@ class ServerUtils:
             else:
                 message += 'For user ' + target + ': You have no reason to remove yourself from the blacklist :)\n'
 
-        message = {'message': message}
-        Connection.send(s, command, message)
+        data_json = {'command': 'OK', 'message': message}
+        Connection.send(s, data_json)
 
     def active(self, s, from_user, data):
         """
@@ -351,6 +345,5 @@ class ServerUtils:
                     users.append(username)
 
         sender_username = from_user
-        command = {'command': 'ok'}
-        message = {'from': sender_username, 'message': users}
-        Connection.send(s, command, message)
+        data_json = {'command': 'OK', 'from': sender_username, 'message': users}
+        Connection.send(s, data_json)

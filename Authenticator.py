@@ -108,10 +108,10 @@ class Authenticator:
                         try:
                             (ip, port) = Authenticator.get_user_address(user)
                             socket_online = Connection.connect(ip, port)
-                            command = {'command': 'LOGOUT'}
                             print addr
                             message = username + ' has connected from address: ' + addr[0] + '. You will be disconnected.'
-                            Connection.send(socket_online, command, {'message': message})
+                            data_json = {'command': 'LOGOUT', 'message': message}
+                            Connection.send(socket_online, data_json)
                             socket_online.close()
                         except:
                             print 'Cannot connect to old socket.'
@@ -150,7 +150,7 @@ class Authenticator:
 
                     response = {'message': message}
             else:
-                command = 'BLOCK'
+                command = 'LOCKED'
                 response = {'message': 'This account has been locked for ' + str(block_time) + ' seconds due to too many attempts. Please try later.'}
 
         else:
@@ -158,8 +158,8 @@ class Authenticator:
             command = 'USER_NOT_FOUND'
             response = {'message': message}
 
-        command = {'command': command}
-        return command, response
+        data_json = {'command': command, 'response': response}
+        return data_json
 
     @staticmethod
     def __reset_locked_status(user_ip, user, block_time):
