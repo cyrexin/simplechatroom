@@ -2,6 +2,7 @@ from ClientUtils import *
 from Utils import *
 import os
 import sys
+import getpass
 
 
 class ClientCLI:
@@ -36,7 +37,7 @@ class ClientCLI:
         """
         while True:
             username = raw_input("Username: ")
-            password = raw_input("Password: ")
+            password = getpass.getpass("Password: ")
             if username == '' or password == '':
                 print 'Username and password cannot be empty!'
                 continue

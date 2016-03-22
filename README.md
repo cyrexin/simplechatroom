@@ -1,7 +1,7 @@
 # Simple Chatroom
 
 ### Brief description
-This simple chatroom is developed by Python 2.7 mainly using the socket module. It adopts the server-client structure, where clients can send messages to each other via the server. Some elementary security features are also included in this system. The Github space for this project is: https://github.com/cyrexin/simplechatroom
+This simple chatroom is developed by Python 2.7 mainly using the socket module. It adopts the server-client structure, where clients can send messages to each other via the server. Some elementary security features are also included in this system. This document is written in Github format. If you prefer to the more readable version, please visit: https://github.com/cyrexin/simplechatroom
 
 ### Details on development environment
 This program is written and complied by Python 2.7.3. The text file user_pass.txt contains all the usernames and encrypted passwords. This file is included in the folder. If it is missing by accident, or you cannot log in, simply run the following command and the text file will be created/updated:
@@ -143,3 +143,4 @@ check <user>
 - If a client is idle for a specific period, it will be logged out by the server automatically. This period is defined by the environment variable TIME_OUT, with the default value as 30*60 seconds.
 - If a user attempts to log in with an incorrect password for 3 consecutive times, this IP will be blocked for a certain period for this username. The period is defined by the environment variable BLOCK_TIME, with the default value as 60 seconds.
 - You can use "Ctrl+C" to terminate a client or the server. When the client is terminated, it will be properly logged out. When the server is terminated, all the connected clients will be properly logged out.
+- When the client logs in, the input password is not visible, just like the convention of other Linux applications.
