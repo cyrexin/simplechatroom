@@ -54,6 +54,9 @@ class ClientUtils:
             print '\n' + message
             # sys.exit(0)
             os._exit(0)
+        elif instruction == 'NOTIFICATION':
+            message = data_json['message']
+            print '\n' + message
 
         # print('s: ' + s)
         # print('addr: ' + addr)

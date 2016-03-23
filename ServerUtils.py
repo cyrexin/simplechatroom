@@ -127,6 +127,11 @@ class ServerUtils:
         data_json = Authenticator.authenticate(from_user, data, addr, self.block_time)
         Connection.send(s, data_json)
 
+        status = data_json['command']
+        if status == 'OK':
+            notification_message = from_user + ' has logged in.'
+            self.__notification(from_user, notification_message)
+
     def broadcast(self, s, from_user, data):
         """
         The message from the client will be sent to all other online clients.
@@ -232,6 +237,10 @@ class ServerUtils:
             user['last_active'] = datetime.datetime.now()
         user['session'] = False
         # user['login_attempts'] = 0
+
+        if not is_forced:
+            notification_message = username + ' has logged out.'
+            self.__notification(username, notification_message)
 
     def who(self, s, from_user):
         """
@@ -346,3 +355,18 @@ class ServerUtils:
         sender_username = from_user
         data_json = {'command': 'OK', 'from': sender_username, 'message': users}
         Connection.send(s, data_json)
+
+    def __notification(self, from_user, data):
+        sender_username = from_user
+        for username in self.users:
+            user = self.users[username]
+            if Authenticator.is_online(user):
+                if username != sender_username:  # no need to notify yourself
+                    (ip, port) = Authenticator.get_user_address(user)
+                    try:
+                        socket_to = Connection.connect(ip, port)
+                        data_json = {'command': 'NOTIFICATION', 'from': sender_username, 'message': data}
+                        Connection.send(socket_to, data_json)
+                        socket_to.close()
+                    except:
+                        print 'Could not deliver to: ' + ip + ' port: ' + str(port)

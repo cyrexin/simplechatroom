@@ -139,6 +139,12 @@ check
 check <user>
 ```
 
+#### Notification
+When a user logs in or logs out, the other online users will get a notification. A sample test case is as follows:
+- Use a client window to log in as facebook.
+- Use another client window to log in as google. When this is successful, facebook should get a notification that google has logged in.
+- Log out the user google. Now facebook should get a notification that google has logged out.
+
 ### Some notes:
 - If a client is idle for a specific period, it will be logged out by the server automatically. This period is defined by the environment variable TIME_OUT, with the default value as 30*60 seconds.
 - If a user attempts to log in with an incorrect password for 3 consecutive times, this IP will be blocked for a certain period for this username. The period is defined by the environment variable BLOCK_TIME, with the default value as 60 seconds.
